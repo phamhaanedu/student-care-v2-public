@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cấu hình Hệ thống - Student Care V2</title>
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/semesters.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="sidebar"></nav>
+        
+        <main class="main-content">
+            <!-- Header -->
+            <header id="header" class="header"></header>
+            
+            <div class="content-body">
+                <div class="card">
+                    <h2 class="card-title">Quản lý Danh sách Kỳ học</h2>
+                    
+                    <div class="table-responsive table-semesters">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th class="col-name">TÊN KỲ HỌC</th>
+                                    <th class="col-actions">THAO TÁC</th>
+                                </tr>
+                            </thead>
+                            <tbody id="semestersTableBody">
+                                <!-- Hàng 1: Input thêm mới -->
+                                <tr class="row-add">
+                                    <td>
+                                        <input type="text" id="newSemesterInput" class="input-new-semester" placeholder="VD: Summer 2026">
+                                    </td>
+                                    <td class="text-center">
+                                        <button id="btnAddSemester" class="btn-icon btn-add" title="Thêm kỳ học">+</button>
+                                    </td>
+                                </tr>
+                                <!-- Dynamic rows will be rendered here -->
+                                <tr>
+                                    <td colspan="2" class="text-center" style="padding: 20px;">
+                                        <div class="loader" id="tableLoader" style="display: block; width: 24px; height: 24px; border-top-color: var(--primary-color);"></div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Script -->
+    <script type="module" src="js/layout.js"></script>
+    <script type="module" src="js/semesters.js"></script>
+</body>
+</html>

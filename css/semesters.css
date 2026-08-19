@@ -1,0 +1,70 @@
+.semester-current {
+    background-color: #e6f4ea !important;
+}
+.semester-current-text {
+    color: var(--status-success);
+    font-weight: 600;
+    margin-left: 15px;
+}
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    color: white;
+    transition: all 0.2s;
+    margin-right: 5px;
+}
+.btn-add { background-color: #0d6efd; }
+.btn-add:hover { background-color: #0b5ed7; }
+
+.btn-set-current { background-color: #198754; }
+.btn-set-current:hover { background-color: #157347; }
+
+.btn-delete { background-color: #dc3545; }
+.btn-delete:hover { background-color: #bb2d3b; }
+
+.input-new-semester {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    width: 100%;
+    max-width: 300px;
+    font-size: 0.95rem;
+    outline: none;
+}
+.input-new-semester:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13,110,253,.25);
+}
+
+.table-semesters {
+    margin: 20px auto 0;
+    max-width: 600px;
+}
+
+.col-actions {
+    width: 150px;
+    text-align: center;
+}
+
+.row-add {
+    background-color: #f8f9fa;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-error {
+    color: red;
+}
+
+.col-name {
+    text-align: center;
+}

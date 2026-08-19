@@ -1,0 +1,233 @@
+/* teachers.css */
+
+.table-teachers-container {
+    overflow-x: auto;
+    margin-top: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+}
+
+.table-teachers {
+    table-layout: fixed;
+    width: max-content;
+    min-width: 1000px;
+    /* Force minimum width to allow scrolling */
+}
+
+/* Căn chỉnh kích thước các cột để đảm bảo thẩm mỹ */
+.col-profile {
+    width: 260px;
+}
+
+.col-job {
+    width: 140px;
+}
+
+.col-auth {
+    width: 120px;
+}
+
+.col-empid {
+    width: 100px;
+}
+
+.col-degree {
+    width: 120px;
+}
+
+.col-check {
+    width: 40px;
+}
+
+.col-date {
+    width: 140px;
+}
+
+.col-phone {
+    width: 130px;
+}
+
+.col-action {
+    width: 90px;
+}
+
+/* Gộp ô input nhiều tầng */
+.stacked-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Các ô input và select trong bảng */
+.table-teachers td input[type="text"],
+.table-teachers td input[type="email"],
+.table-teachers td input[type="date"],
+.table-teachers td select {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    background-color: #fff;
+    transition: all 0.2s ease;
+}
+
+.table-teachers td input:focus,
+.table-teachers td select:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(111, 66, 193, 0.1);
+}
+
+/* Dòng nhập liệu (Add Row) */
+.row-add {
+    background-color: rgba(111, 66, 193, 0.03);
+}
+
+.row-add input,
+.row-add select {
+    background-color: #fff;
+}
+
+/* Dòng có thay đổi (Dirty state) */
+.row-dirty {
+    background-color: #fff3cd !important;
+}
+
+.row-dirty input,
+.row-dirty select {
+    background-color: rgba(255, 255, 255, 0.7);
+}
+
+/* Nút thêm/lưu icon */
+.table-teachers .btn-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+.table-teachers td select.inp-system_role {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* Modal ACL Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: #fff;
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    width: 400px;
+    max-width: 90%;
+    box-shadow: var(--box-shadow-md);
+    animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* RESPONSIVE CARD-BASED LAYOUT CHO MOBILE */
+@media (max-width: 992px) {
+    .table-teachers, 
+    .table-teachers tbody, 
+    .table-teachers tr, 
+    .table-teachers td {
+        display: block;
+        width: 100%;
+    }
+    
+    .table-teachers {
+        min-width: unset;
+    }
+    
+    .table-teachers thead {
+        display: none; /* Hide table headers */
+    }
+    
+    .table-teachers tr {
+        margin-bottom: 20px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-md);
+        padding: 10px;
+        background: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .table-teachers td {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        padding: 12px 5px;
+        border-bottom: 1px dashed #eee;
+        text-align: right; /* Default align for right side content */
+    }
+    
+    .table-teachers td:last-child {
+        border-bottom: none;
+        justify-content: center;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        margin-top: 10px;
+    }
+    
+    .table-teachers td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--text-secondary);
+        width: 40%;
+        text-align: left;
+        margin-right: 10px;
+        padding-top: 5px;
+        font-size: 0.9rem;
+    }
+    
+    /* Adjust inputs width */
+    .table-teachers td input:not([type="checkbox"]), 
+    .table-teachers td select, 
+    .stacked-inputs {
+        width: 60%;
+        margin: 0;
+        text-align: left;
+    }
+    
+    .table-teachers td input[type="checkbox"] {
+        margin-right: 0;
+    }
+    
+    .table-teachers td.text-center {
+        text-align: right !important; /* Override text-center on mobile */
+    }
+    
+    .table-teachers td.text-center::before {
+        text-align: left !important;
+    }
+    
+    /* Cột thao tác không có label */
+    .table-teachers td[data-label="Thao tác"]::before {
+        display: none;
+    }
+}

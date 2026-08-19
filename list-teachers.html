@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Giảng viên - Student Care V2</title>
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/teachers.css">
+    <!-- SheetJS (xlsx) cho tính năng Import/Export Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="sidebar"></nav>
+        
+        <main class="main-content">
+            <!-- Header -->
+            <header id="header" class="header"></header>
+            
+            <div class="content-body">
+                <div class="card card-full-width">
+                    <div class="card-header-flex">
+                        <h2 class="card-title">Quản lý Danh sách Giảng viên</h2>
+                        <div class="toolbar" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <button id="btnDownloadTemplate" class="btn btn-secondary">📄 Tải Mẫu Excel</button>
+                            <label class="btn btn-secondary" style="cursor: pointer; margin: 0;">
+                                📥 Nhập từ Excel
+                                <input type="file" id="fileImportExcel" accept=".xlsx, .xls" style="display: none;">
+                            </label>
+                            <button id="btnExportExcel" class="btn btn-secondary">📤 Xuất Excel</button>
+                            <button id="btnSaveAll" class="btn btn-primary" disabled>Lưu Tất Cả Các Dòng Bị Đổi</button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive table-teachers-container">
+                        <table class="table table-teachers">
+                            <thead>
+                                <tr>
+                                    <th class="col-profile">Thông tin chung (Mã/Tên/Email)</th>
+                                    <th class="col-job">Công tác (Loại/Chức)</th>
+                                    <th class="col-auth text-center">Quyền hạn</th>
+                                    <th class="col-empid">Mã NV</th>
+                                    <th class="col-degree">Trình độ</th>
+                                    <th class="col-check text-center" title="Nghiệp vụ sư phạm">NVSP</th>
+                                    <th class="col-check text-center">IBSTPI</th>
+                                    <th class="col-date">Ngày sinh</th>
+                                    <th class="col-phone">Số điện thoại</th>
+                                    <th class="col-check text-center">Khóa</th>
+                                    <th class="col-action text-center">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="teachersTableBody">
+                                <!-- Hàng 1: Input thêm mới -->
+                                <tr class="row-add">
+                                    <td data-label="Thông tin chung">
+                                        <div class="stacked-inputs">
+                                            <input type="text" id="new_docId" placeholder="Mã GV (VD: GV01)">
+                                            <input type="text" id="new_name" placeholder="Tên Giảng viên">
+                                            <input type="email" id="new_email" placeholder="Email">
+                                        </div>
+                                    </td>
+                                    <td data-label="Công tác">
+                                        <div class="stacked-inputs">
+                                            <select id="new_type" title="Loại Giảng viên">
+                                                <option value="Full time">Full time</option>
+                                                <option value="Part time">Part time</option>
+                                            </select>
+                                            <select id="new_role" title="Chức vụ">
+                                                <option value="Giảng viên">Giảng viên</option>
+                                                <option value="Trưởng môn">Trưởng môn</option>
+                                                <option value="Chủ nhiệm bộ môn">Chủ nhiệm bộ môn</option>
+                                            </select>
+                                        </div>
+                                    </td>
+                                    <td data-label="Quyền hạn">
+                                        <div class="stacked-inputs" style="align-items: center;">
+                                            <select id="new_system_role" title="Phân quyền">
+                                                <option value="Teacher">Teacher</option>
+                                                <option value="Admin">Admin</option>
+                                                <option value="Super Admin">Super Admin</option>
+                                            </select>
+                                            <button class="btn-icon" disabled title="Ngoại lệ ACL">⚙️</button>
+                                        </div>
+                                    </td>
+                                    <td data-label="Mã NV"><input type="text" id="new_emp_id" placeholder="Mã NV"></td>
+                                    <td data-label="Trình độ"><input type="text" id="new_degree" placeholder="Trình độ"></td>
+                                    <td data-label="NVSP" class="text-center"><input type="checkbox" id="new_pedagogy"></td>
+                                    <td data-label="IBSTPI" class="text-center"><input type="checkbox" id="new_ibstpi"></td>
+                                    <td data-label="Ngày sinh"><input type="date" id="new_dob"></td>
+                                    <td data-label="SĐT"><input type="text" id="new_phone" placeholder="SĐT"></td>
+                                    <td data-label="Khóa" class="text-center"><input type="checkbox" id="new_is_lock" disabled></td>
+                                    <td data-label="Thao tác" class="text-center">
+                                        <button id="btnAddTeacher" class="btn-icon btn-add" title="Thêm Giảng viên mới">+</button>
+                                    </td>
+                                </tr>
+                                <!-- Dynamic rows will be rendered here -->
+                                <tr id="loadingRow">
+                                    <td colspan="15" class="text-center" style="padding: 30px;">
+                                        <div class="loader" style="display: inline-block; width: 32px; height: 32px; border-top-color: var(--primary-color);"></div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="load-more-container text-center" style="margin-top: 15px; display: none;" id="loadMoreContainer">
+                        <button id="btnLoadMore" class="btn btn-secondary">Tải thêm</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal ACL -->
+    <div id="aclModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3 class="modal-title" style="margin-bottom: 5px;">Quyền Ngoại Lệ (ACL)</h3>
+            <p style="margin-bottom: 20px; font-size: 0.9rem; color: var(--text-secondary);">Cấp quyền cho: <strong id="aclTeacherName"></strong></p>
+            
+            <div class="acl-checkboxes" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px;">
+                <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="acl_export"> Cho phép Xuất báo cáo Excel
+                </label>
+                <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="acl_manage_subjects"> Quản lý Danh mục Môn học
+                </label>
+                <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="acl_delete_students"> Có quyền Xóa Sinh viên
+                </label>
+            </div>
+            
+            <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button id="btnCancelAcl" class="btn btn-secondary">Hủy</button>
+                <button id="btnSaveAcl" class="btn btn-primary">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script -->
+    <script type="module" src="js/layout.js"></script>
+    <script type="module" src="js/teachers.js"></script>
+</body>
+</html>

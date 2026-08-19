@@ -1,0 +1,222 @@
+/* components.css - Reusable UI Components */
+
+/* Layout */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background-color: var(--secondary-color);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+  overflow-x: hidden;
+  position: relative;
+}
+
+.sidebar.collapsed {
+  width: 70px;
+}
+
+.sidebar-header {
+  padding: var(--spacing-lg);
+  font-size: 1.25rem;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 70px; /* match header height */
+  white-space: nowrap;
+}
+
+.sidebar.collapsed .sidebar-header span {
+  display: none;
+}
+
+.sidebar-nav {
+  padding: var(--spacing-md) 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.nav-item {
+  padding: 12px var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  color: #a1a5b7;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+}
+
+.nav-item:hover, .nav-item.active {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border-left: 3px solid var(--primary-color);
+}
+
+.nav-icon {
+  width: 24px;
+  text-align: center;
+  margin-right: 15px;
+  font-size: 1.2rem;
+}
+
+.sidebar.collapsed .nav-item {
+  padding: 12px 23px; /* Center icon when collapsed */
+}
+
+.sidebar.collapsed .nav-text {
+  display: none;
+}
+
+/* Sidebar Toggle Button */
+.btn-toggle-sidebar {
+  background: transparent;
+  border: none;
+  color: #a1a5b7;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 5px;
+  transition: color 0.2s;
+}
+.btn-toggle-sidebar:hover {
+  color: #fff;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  height: 70px;
+  background-color: var(--surface-color);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--spacing-lg);
+  justify-content: space-between;
+}
+
+.content-body {
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Cards */
+.card {
+  background: var(--surface-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--box-shadow-sm);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  border: 1px solid var(--border-color);
+}
+
+.card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-md);
+  color: var(--text-primary);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+  box-shadow: 0 4px 8px rgba(111, 66, 193, 0.3);
+}
+
+/* Table */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: var(--spacing-md);
+  border-bottom: 2px solid var(--border-color);
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+}
+
+.table td {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.table tbody tr:hover {
+  background-color: #f9f9f9;
+}
+
+/* Status Badges */
+.badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.badge-success { background: var(--status-success-bg); color: var(--status-success); }
+.badge-warning { background: var(--status-warning-bg); color: var(--status-warning); }
+.badge-danger { background: var(--status-danger-bg); color: var(--status-danger); }
+
+/* Health Bar */
+.health-bar-container {
+  width: 100%;
+  height: 8px;
+  background-color: var(--border-color);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 5px;
+}
+
+.health-bar-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+.health-good { background-color: var(--status-success); }
+.health-warning { background-color: var(--status-warning); }
+.health-critical { background-color: var(--status-danger); }

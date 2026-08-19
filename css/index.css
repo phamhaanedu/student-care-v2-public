@@ -1,0 +1,61 @@
+/* index.css - Design System Variables & Base Reset */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Color Palette - Premium Mini-CRM */
+  --primary-color: #6f42c1; /* Deep Purple */
+  --primary-hover: #5a32a3;
+  --secondary-color: #1e1e2d; /* Dark Blue/Gray for Sidebars */
+  --background-color: #f5f6fa;
+  --surface-color: #ffffff;
+  --text-primary: #333333;
+  --text-secondary: #6c757d;
+  --border-color: #e2e8f0;
+
+  /* Status Colors */
+  --status-success: #28a745;
+  --status-success-bg: #e6f4ea;
+  --status-warning: #ffc107;
+  --status-warning-bg: #fff8e1;
+  --status-danger: #dc3545;
+  --status-danger-bg: #fce4e4;
+
+  /* Typography */
+  --font-family: 'Inter', sans-serif;
+  
+  /* Geometry */
+  --border-radius-sm: 6px;
+  --border-radius-md: 12px; /* Standard Card border radius */
+  --border-radius-lg: 16px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  
+  /* Shadows */
+  --box-shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+  --box-shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* Base Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--background-color);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  text-decoration: none;
+  color: var(--primary-color);
+}
+
+ul {
+  list-style: none;
+}

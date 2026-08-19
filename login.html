@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - Student Care V2</title>
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/login.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">Student Care System</div>
+        <div class="subtitle">Hệ thống hỗ trợ chăm sóc sinh viên FPT Polytechnic</div>
+        
+        <div class="separator">LOGIN</div>
+        
+        <button id="btnGoogleLogin" class="btn-google">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+            Google
+        </button>
+        <div id="loginLoader" class="loader" style="margin-top: 1rem;"></div>
+        <div id="errorMessage" class="error-message"></div>
+    </div>
+
+    <!-- Script xử lý Auth -->
+    <script type="module" src="js/auth.js"></script>
+</body>
+</html>
