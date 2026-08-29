@@ -6,7 +6,7 @@
     <title>Phân Công Chăm Sóc Sinh Viên - Student Care V2</title>
     <link rel="stylesheet" href="css/index.css">
     <link rel="stylesheet" href="css/components.css">
-    <link rel="stylesheet" href="css/assign.css">
+    <link rel="stylesheet" href="css/assign.css?v=0.6.0">
 </head>
 <body>
     <div class="app-container">
@@ -20,31 +20,59 @@
             <div class="content-body">
                 <!-- Top Header & Bộ lọc -->
                 <div class="assign-header-flex">
-                    <h1 class="assign-page-title">Phân Công Chăm Sóc Sinh Viên</h1>
+                    <div>
+                        <h1 class="assign-page-title">Phân Công Chăm Sóc Sinh Viên</h1>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0 0 0;">
+                            Phân phối danh sách sinh viên rủi ro cho đội ngũ Giảng viên chăm sóc theo từng Block.
+                        </p>
+                    </div>
                     <div class="filter-group-container">
                         <div class="filter-item">
-                            <label for="selectSemester">Kỳ học:</label>
+                            <label for="selectSemester">🗓️ Kỳ học:</label>
                             <select id="selectSemester" class="filter-select">
                                 <option value="">Đang tải...</option>
                             </select>
                         </div>
                         <div class="filter-item">
-                            <label for="selectAbsenceFilter">Mức độ vắng:</label>
+                            <label for="selectBlockFilter">📦 Block:</label>
+                            <select id="selectBlockFilter" class="filter-select">
+                                <option value="all">Tất cả Block</option>
+                                <option value="Block 1">Block 1</option>
+                                <option value="Block 2">Block 2</option>
+                                <option value="Full">Cả kỳ (Full)</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label for="selectClassStatusFilter">🏷️ Trạng thái lớp:</label>
+                            <select id="selectClassStatusFilter" class="filter-select">
+                                <option value="Ongoing" selected>🟢 Đang học (Chưa xong)</option>
+                                <option value="Upcoming">🕒 Chưa học (Sắp tới)</option>
+                                <option value="Completed">🏁 Đã hoàn thành</option>
+                                <option value="all">Tất cả trạng thái</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label for="selectAbsenceFilter">⚠️ Mức độ vắng:</label>
                             <select id="selectAbsenceFilter" class="filter-select">
-                                <option value="all_risk">Tất cả nguy hiểm</option>
+                                <option value="all_risk" selected>⚠️ Nguy cơ (Vắng ≥ 2)</option>
+                                <option value="all">Tất cả mức vắng</option>
                                 <option value="1">Vắng 1 buổi</option>
                                 <option value="2">Vắng 2 buổi</option>
                                 <option value="3">Vắng 3 buổi</option>
-                                <option value="gte4">Vắng &gt;= 4 buổi</option>
-                                <option value="all">Tất cả</option>
+                                <option value="gte4">Vắng ≥ 4 buổi</option>
                             </select>
                         </div>
                     </div>
                 </div>
 
-                <!-- Hộp thao tác phân công -->
+                <!-- Hộp thao tác phân công & Quản lý vòng đời lớp -->
                 <div class="assign-toolbar-card">
-                    <label for="inpTeacherList" class="toolbar-label">Nhập danh sách Mã GV chăm sóc (cách nhau dấu phẩy):</label>
+                    <div class="toolbar-header-flex">
+                        <label for="inpTeacherList" class="toolbar-label">Nhập danh sách Mã GV chăm sóc (cách nhau dấu phẩy):</label>
+                        <button id="btnOpenClassManager" class="btn-manage-classes" title="Cấu hình trạng thái Đang học / Đã hoàn thành cho các lớp Block 1 & 2">
+                            ⚙️ Quản Lý Vòng Đời Lớp (Block 1/2)
+                        </button>
+                    </div>
                     <div class="toolbar-actions-row">
                         <input type="text" id="inpTeacherList" class="input-teacher-list" placeholder="VD: GV01, GV02, GV03">
                         <button id="btnAutoAssign" class="btn-auto-assign">Tự động chia đều</button>
@@ -65,7 +93,7 @@
                                 <th class="col-student-id">Mã SV</th>
                                 <th class="col-name">Họ Tên</th>
                                 <th class="col-course">Mã Môn</th>
-                                <th class="col-class">Lớp</th>
+                                <th class="col-class">Lớp & Block</th>
                                 <th class="col-absence">Vắng</th>
                                 <th class="col-caregiver">Mã GV Chăm Sóc</th>
                                 <th class="col-care-time">Thời gian CS</th>
@@ -86,8 +114,73 @@
         </main>
     </div>
 
+    <!-- MODAL QUẢN LÝ VÒNG ĐỜI LỚP HỌC (CLASS LIFECYCLE MANAGER MODAL) -->
+    <div id="modalClassLifecycle" class="modal-overlay" style="display: none;">
+        <div class="modal-card modal-lg">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title">⚙️ Quản Lý Vòng Đời & Trạng Thái Lớp Học</h3>
+                    <p class="modal-subtitle">
+                        Học kỳ: <strong id="modalSemesterLabel">-</strong> | Cập nhật trạng thái để tự động loại bỏ lớp cũ khỏi danh sách phân công.
+                    </p>
+                </div>
+                <button type="button" class="btn-close-modal" id="btnCloseClassManager">&times;</button>
+            </div>
+
+            <!-- Modal Fast Actions & Search -->
+            <div class="modal-actions-bar">
+                <div class="search-inline-wrap">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="inpSearchModalClasses" class="input-search-inline" placeholder="Tìm theo Mã Môn, Tên Lớp...">
+                </div>
+                <div class="fast-action-buttons">
+                    <button type="button" id="btnSetBlock1Completed" class="btn-fast-action btn-fast-danger" title="Chuyển tất cả lớp kết thúc trong Block 1 sang Đã hoàn thành">
+                        ⚡ Đánh dấu hoàn thành toàn bộ lớp Block 1 (🏁)
+                    </button>
+                    <button type="button" id="btnSetBlock2Ongoing" class="btn-fast-action btn-fast-primary" title="Kích hoạt tất cả lớp Block 2 sang Đang học">
+                        🟢 Kích hoạt Block 2 (Đang học)
+                    </button>
+                    <button type="button" id="btnSetAllOngoing" class="btn-fast-action btn-fast-light" title="Đặt tất cả lớp sang Đang học">
+                        ⚡ Đặt tất cả sang Đang học
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-body-scroll">
+                <table class="table-modal-classes">
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">Mã Môn</th>
+                            <th>Tên Môn Học</th>
+                            <th style="width: 110px;">Lớp</th>
+                            <th style="width: 160px;">Thời Gian (FAP)</th>
+                            <th class="text-center" style="width: 85px;">Block</th>
+                            <th class="text-center" style="width: 75px;">Sĩ Số</th>
+                            <th style="width: 170px;">Trạng Thái Vòng Đời</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modalClassesTableBody">
+                        <tr>
+                            <td colspan="7" class="text-center text-muted" style="padding: 30px;">Đang tải danh sách lớp...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="modal-footer">
+                <div class="modal-summary-text" id="modalClassesSummaryText">
+                    Tổng cộng: 0 lớp học
+                </div>
+                <div class="modal-footer-btns">
+                    <button type="button" id="btnCancelClassManager" class="btn-modal-secondary">Hủy bỏ</button>
+                    <button type="button" id="btnSaveClassLifecycle" class="btn-modal-primary">💾 Lưu Trạng Thái Lớp</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
-    <script type="module" src="js/layout.js"></script>
-    <script type="module" src="js/assign.js"></script>
+    <script type="module" src="js/layout.js?v=0.6.0"></script>
+    <script type="module" src="js/assign.js?v=0.6.0"></script>
 </body>
 </html>

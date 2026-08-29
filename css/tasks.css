@@ -79,25 +79,56 @@
     box-shadow: var(--box-shadow-sm);
     display: flex;
     flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 14px;
+}
+
+.filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1 1 auto;
+    min-width: 140px;
+}
+
+.filter-item.filter-search {
+    flex: 2 1 240px;
+    min-width: 220px;
+}
+
+.filter-item.filter-class-item {
+    flex: 2 1 260px;
+    min-width: 200px;
+}
+
+.filter-label {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 16px;
+    gap: 4px;
+    user-select: none;
 }
 
 .search-box {
     position: relative;
-    flex: 1;
-    min-width: 240px;
+    width: 100%;
 }
 
 .input-search {
     width: 100%;
+    height: 38px;
     padding: 8px 14px 8px 36px;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     outline: none;
     transition: all 0.2s;
+    background-color: #fff;
+    box-sizing: border-box;
 }
 
 .input-search:focus {
@@ -112,17 +143,12 @@
     transform: translateY(-50%);
     color: var(--text-secondary);
     pointer-events: none;
-    font-size: 0.9rem;
-}
-
-.filter-controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px;
+    font-size: 0.88rem;
 }
 
 .filter-select {
+    width: 100%;
+    height: 38px;
     padding: 8px 12px;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
@@ -131,11 +157,20 @@
     color: var(--text-primary);
     cursor: pointer;
     outline: none;
-    transition: border-color 0.2s;
+    transition: all 0.2s;
+    box-sizing: border-box;
 }
 
 .filter-select:focus {
     border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.15);
+}
+
+.select-semester {
+    font-weight: 600;
+    color: var(--primary-color);
+    border-color: rgba(111, 66, 193, 0.4);
+    background-color: rgba(111, 66, 193, 0.04);
 }
 
 /* ==========================================================================
@@ -1153,3 +1188,28 @@ textarea.form-control {
         gap: 14px;
     }
 }
+
+/* Badges for Block */
+.badge-block {
+    display: inline-block;
+    padding: 2px 7px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border-radius: 4px;
+}
+
+.badge-block-1 {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.badge-block-2 {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge-block-full {
+    background: #f3e8ff;
+    color: #6b21a8;
+}
+

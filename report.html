@@ -7,7 +7,7 @@
     <!-- Core Design System & Components -->
     <link rel="stylesheet" href="css/index.css">
     <link rel="stylesheet" href="css/components.css">
-    <link rel="stylesheet" href="css/report.css">
+    <link rel="stylesheet" href="css/report.css?v=0.6.0">
     <!-- SheetJS (xlsx) cho tính năng Xuất Báo Cáo Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -221,6 +221,26 @@
                             </div>
                             <div class="tab-filters-row">
                                 <input type="text" id="inpSearchDetail" class="input-search-inline" placeholder="Tìm theo Mã SV, Họ tên, Lớp...">
+                                <select id="filterDetailBlock" class="filter-select-sm">
+                                    <option value="all">Tất cả Block</option>
+                                    <option value="Block 1">Block 1</option>
+                                    <option value="Block 2">Block 2</option>
+                                    <option value="Full">Cả kỳ (Full)</option>
+                                </select>
+                                <select id="filterDetailClassStatus" class="filter-select-sm">
+                                    <option value="all">Tất cả trạng thái lớp</option>
+                                    <option value="Ongoing">🟢 Đang học</option>
+                                    <option value="Upcoming">🕒 Chưa học</option>
+                                    <option value="Completed">🏁 Đã hoàn thành</option>
+                                </select>
+                                <select id="filterDetailAbsence" class="filter-select-sm">
+                                    <option value="all">Tất cả mức vắng</option>
+                                    <option value="all_risk">⚠️ Nguy cơ (Vắng ≥ 2)</option>
+                                    <option value="1">Vắng 1 buổi</option>
+                                    <option value="2">Vắng 2 buổi</option>
+                                    <option value="3">Vắng 3 buổi</option>
+                                    <option value="gte4">Vắng ≥ 4 buổi</option>
+                                </select>
                                 <select id="filterDetailTeacher" class="filter-select-sm">
                                     <option value="all">Tất cả Giảng viên</option>
                                 </select>
@@ -241,7 +261,7 @@
                                     <tr>
                                         <th style="width: 100px;">Mã SV</th>
                                         <th style="width: 160px;">Họ Tên</th>
-                                        <th style="width: 120px;">Lớp</th>
+                                        <th style="width: 130px;">Lớp & Block</th>
                                         <th>Môn Học</th>
                                         <th class="text-center" style="width: 70px;">Vắng</th>
                                         <th style="width: 120px;">GV CS</th>
@@ -267,7 +287,7 @@
     <div id="toastContainer" class="toast-container"></div>
 
     <!-- Layout & Report Modules -->
-    <script type="module" src="js/layout.js?v=0.5.12"></script>
-    <script type="module" src="js/report.js?v=0.5.12"></script>
+    <script type="module" src="js/layout.js?v=0.6.0"></script>
+    <script type="module" src="js/report.js?v=0.6.0"></script>
 </body>
 </html>

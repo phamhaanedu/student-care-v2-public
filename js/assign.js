@@ -7,13 +7,16 @@ import { checkAuth } from './auth.js';
 let globalConfig = { available_semesters: [], current_semester: '' };
 let currentSemester = '';
 let allSemesterRecords = []; // Toàn bộ records của kỳ đã chọn
-let displayedRecords = []; // Records hiển thị sau khi lọc mức độ vắng
+let displayedRecords = []; // Records hiển thị sau khi lọc
 let dirtyRecords = new Map(); // docId -> caregiver_id
 let careLogsMap = new Map(); // student_id -> { care_time, care_count, last_care_summary }
 let currentSession = null;
+let modalClassesList = []; // Danh sách lớp trong Modal quản lý vòng đời
 
 // DOM Elements
 const selectSemester = document.getElementById('selectSemester');
+const selectBlockFilter = document.getElementById('selectBlockFilter');
+const selectClassStatusFilter = document.getElementById('selectClassStatusFilter');
 const selectAbsenceFilter = document.getElementById('selectAbsenceFilter');
 const inpTeacherList = document.getElementById('inpTeacherList');
 const btnAutoAssign = document.getElementById('btnAutoAssign');
@@ -21,6 +24,20 @@ const btnSaveAssign = document.getElementById('btnSaveAssign');
 const summaryBanner = document.getElementById('summaryBanner');
 const recordCountEl = document.getElementById('recordCount');
 const assignTableBody = document.getElementById('assignTableBody');
+
+// Modal Elements
+const btnOpenClassManager = document.getElementById('btnOpenClassManager');
+const modalClassLifecycle = document.getElementById('modalClassLifecycle');
+const btnCloseClassManager = document.getElementById('btnCloseClassManager');
+const btnCancelClassManager = document.getElementById('btnCancelClassManager');
+const btnSaveClassLifecycle = document.getElementById('btnSaveClassLifecycle');
+const inpSearchModalClasses = document.getElementById('inpSearchModalClasses');
+const btnSetBlock1Completed = document.getElementById('btnSetBlock1Completed');
+const btnSetBlock2Ongoing = document.getElementById('btnSetBlock2Ongoing');
+const btnSetAllOngoing = document.getElementById('btnSetAllOngoing');
+const modalClassesTableBody = document.getElementById('modalClassesTableBody');
+const modalClassesSummaryText = document.getElementById('modalClassesSummaryText');
+const modalSemesterLabel = document.getElementById('modalSemesterLabel');
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -31,11 +48,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 2. Khởi tạo cấu hình kỳ học
         await initSemesterConfig();
 
-        // 3. Đăng ký sự kiện
+        // 3. Đăng ký sự kiện bộ lọc
         selectSemester.addEventListener('change', handleSemesterChange);
+        if (selectBlockFilter) selectBlockFilter.addEventListener('change', handleFilterChange);
+        if (selectClassStatusFilter) selectClassStatusFilter.addEventListener('change', handleFilterChange);
         selectAbsenceFilter.addEventListener('change', handleFilterChange);
         btnAutoAssign.addEventListener('click', handleAutoAssign);
         btnSaveAssign.addEventListener('click', handleSaveAssign);
+
+        // 4. Đăng ký sự kiện Modal Quản lý Lớp
+        if (btnOpenClassManager) btnOpenClassManager.addEventListener('click', openClassLifecycleModal);
+        if (btnCloseClassManager) btnCloseClassManager.addEventListener('click', closeClassLifecycleModal);
+        if (btnCancelClassManager) btnCancelClassManager.addEventListener('click', closeClassLifecycleModal);
+        if (btnSaveClassLifecycle) btnSaveClassLifecycle.addEventListener('click', handleSaveClassLifecycle);
+        if (inpSearchModalClasses) inpSearchModalClasses.addEventListener('input', renderModalClassesTable);
+
+        if (btnSetBlock1Completed) {
+            btnSetBlock1Completed.addEventListener('click', () => setBulkModalStatus('Block 1', 'Completed'));
+        }
+        if (btnSetBlock2Ongoing) {
+            btnSetBlock2Ongoing.addEventListener('click', () => setBulkModalStatus('Block 2', 'Ongoing'));
+        }
+        if (btnSetAllOngoing) {
+            btnSetAllOngoing.addEventListener('click', () => setBulkModalStatus('all', 'Ongoing'));
+        }
 
     } catch (error) {
         console.error("Lỗi khởi tạo:", error);
@@ -205,35 +241,45 @@ async function loadCareLogsForSemester(semester) {
 }
 
 /**
- * Xử lý khi thay đổi Mức độ vắng
+ * Xử lý khi thay đổi Bộ lọc (Kỳ, Block, Trạng thái lớp, Mức độ vắng)
  */
 function handleFilterChange() {
     applyFilterAndRender();
 }
 
 /**
- * Lọc mảng allSemesterRecords theo mức độ vắng và Render
+ * Lọc mảng allSemesterRecords theo Block, Trạng thái lớp, Mức độ vắng và Render
  */
 function applyFilterAndRender() {
-    const filterVal = selectAbsenceFilter.value;
+    const filterAbsenceVal = selectAbsenceFilter ? selectAbsenceFilter.value : 'all_risk';
+    const filterBlockVal = selectBlockFilter ? selectBlockFilter.value : 'all';
+    const filterStatusVal = selectClassStatusFilter ? selectClassStatusFilter.value : 'Ongoing';
 
     displayedRecords = allSemesterRecords.filter(r => {
+        // 1. Mức độ vắng
         const absences = r.total_absences || 0;
-        if (filterVal === 'all_risk') {
-            // Nguy hiểm: Vắng >= 2 buổi
-            return absences >= 2;
-        } else if (filterVal === '1') {
-            return absences === 1;
-        } else if (filterVal === '2') {
-            return absences === 2;
-        } else if (filterVal === '3') {
-            return absences === 3;
-        } else if (filterVal === 'gte4') {
-            return absences >= 4;
-        } else if (filterVal === 'all') {
-            return true;
+        let matchAbsence = true;
+        if (filterAbsenceVal === 'all_risk') {
+            matchAbsence = absences >= 2;
+        } else if (filterAbsenceVal === '1') {
+            matchAbsence = absences === 1;
+        } else if (filterAbsenceVal === '2') {
+            matchAbsence = absences === 2;
+        } else if (filterAbsenceVal === '3') {
+            matchAbsence = absences === 3;
+        } else if (filterAbsenceVal === 'gte4') {
+            matchAbsence = absences >= 4;
         }
-        return true;
+
+        // 2. Block
+        const rBlock = r.block || 'Block 1';
+        let matchBlock = (filterBlockVal === 'all') || (rBlock === filterBlockVal);
+
+        // 3. Trạng thái lớp (Mặc định Ongoing - Đang học)
+        const rStatus = r.class_status || 'Ongoing';
+        let matchStatus = (filterStatusVal === 'all') || (rStatus === filterStatusVal);
+
+        return matchAbsence && matchBlock && matchStatus;
     });
 
     // Cập nhật banner số lượng
@@ -294,19 +340,32 @@ function renderTable() {
         const caregiverVal = dirtyRecords.has(record.docId) ? dirtyRecords.get(record.docId) : (record.caregiver_id || '');
         const isDirty = dirtyRecords.has(record.docId);
 
-        // Hiển thị môn học (course_code và course_name nếu có)
+        // Hiển thị môn học
         const courseDisplay = record.course_name ? `${record.course_code} (${record.course_name})` : record.course_code;
-        const classDisplay = record.class_name || record.class_id || '-';
+        
+        // Hiển thị Lớp, Block & Trạng thái
+        const clsName = record.class_name || record.class_id || '-';
+        const blockName = record.block || 'Block 1';
+        const blockClass = blockName === 'Block 2' ? 'badge-block-2' : (blockName === 'Full' ? 'badge-block-full' : 'badge-block-1');
+        const statusIcon = record.class_status === 'Completed' ? '🏁' : (record.class_status === 'Upcoming' ? '🕒' : '🟢');
+
+        const classDisplay = `
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <span>${statusIcon} <strong>${clsName}</strong></span>
+                <span class="badge-block ${blockClass}">${blockName}</span>
+            </div>
+        `;
+
         const careTimeDisplay = formatDateTime(record.care_time);
         const careCountDisplay = record.care_count || 0;
         const careHistoryDisplay = record.last_care_summary || '-';
 
         html += `
             <tr class="${isDirty ? 'row-dirty' : ''}" data-id="${record.docId}">
-                <td class="col-student-id" data-label="Mã SV">${record.student_id}</td>
+                <td class="col-student-id" data-label="Mã SV"><strong>${record.student_id}</strong></td>
                 <td class="col-name" data-label="Họ Tên">${record.name || '-'}</td>
                 <td class="col-course" data-label="Mã Môn">${courseDisplay}</td>
-                <td class="col-class" data-label="Lớp">${classDisplay}</td>
+                <td class="col-class" data-label="Lớp & Block">${classDisplay}</td>
                 <td class="col-absence" data-label="Vắng">
                     <span class="badge-absence ${badgeClass}">${absences}/3</span>
                 </td>
@@ -338,6 +397,257 @@ function renderTable() {
             if (tr) tr.classList.add('row-dirty');
         });
     });
+}
+
+// ==========================================================================
+// QUẢN LÝ VÒNG ĐỜI LỚP HỌC (CLASS LIFECYCLE MODAL MANAGEMENT)
+// ==========================================================================
+
+/**
+ * Trích xuất danh sách lớp duy nhất từ allSemesterRecords
+ */
+function extractClassesLifecycle() {
+    const classMap = new Map();
+
+    allSemesterRecords.forEach(r => {
+        const cls = r.class_name || r.class_id || 'Chưa rõ lớp';
+        const code = r.course_code || 'Chưa rõ môn';
+        const key = `${cls}___${code}`;
+
+        const dateRange = r.date_range || '';
+        const startDate = r.start_date || '';
+        const endDate = r.end_date || '';
+        const block = r.block || 'Block 1';
+        const status = r.class_status || 'Ongoing';
+
+        if (!classMap.has(key)) {
+            classMap.set(key, {
+                key: key,
+                class_id: r.class_id || cls,
+                class_name: cls,
+                course_code: code,
+                course_name: r.course_name || code,
+                date_range: dateRange,
+                start_date: startDate,
+                end_date: endDate,
+                block: block,
+                class_status: status,
+                count: 1
+            });
+        } else {
+            const item = classMap.get(key);
+            item.count++;
+            if (!item.date_range && dateRange) item.date_range = dateRange;
+            if (!item.start_date && startDate) item.start_date = startDate;
+            if (!item.end_date && endDate) item.end_date = endDate;
+        }
+    });
+
+    modalClassesList = Array.from(classMap.values()).sort((a, b) => {
+        const comp = (a.block || '').localeCompare(b.block || '');
+        if (comp !== 0) return comp;
+        return a.class_name.localeCompare(b.class_name);
+    });
+}
+
+/**
+ * Mở Modal Quản Lý Vòng Đời Lớp
+ */
+function openClassLifecycleModal() {
+    if (!modalClassLifecycle) return;
+    extractClassesLifecycle();
+
+    if (modalSemesterLabel) modalSemesterLabel.textContent = currentSemester || 'Chưa chọn';
+    if (inpSearchModalClasses) inpSearchModalClasses.value = '';
+
+    renderModalClassesTable();
+    modalClassLifecycle.style.display = 'flex';
+}
+
+/**
+ * Đóng Modal
+ */
+function closeClassLifecycleModal() {
+    if (modalClassLifecycle) modalClassLifecycle.style.display = 'none';
+}
+
+/**
+ * Render bảng danh sách lớp trong Modal
+ */
+function renderModalClassesTable() {
+    if (!modalClassesTableBody) return;
+
+    const searchVal = inpSearchModalClasses ? inpSearchModalClasses.value.trim().toLowerCase() : '';
+    const filtered = modalClassesList.filter(c => {
+        return !searchVal || 
+            (c.course_code && c.course_code.toLowerCase().includes(searchVal)) ||
+            (c.course_name && c.course_name.toLowerCase().includes(searchVal)) ||
+            (c.class_name && c.class_name.toLowerCase().includes(searchVal));
+    });
+
+    if (filtered.length === 0) {
+        modalClassesTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted" style="padding: 25px;">Không tìm thấy lớp nào phù hợp.</td></tr>`;
+        updateModalSummary(modalClassesList);
+        return;
+    }
+
+    let html = '';
+    filtered.forEach(c => {
+        const blockClass = c.block === 'Block 2' ? 'badge-block-2' : (c.block === 'Full' ? 'badge-block-full' : 'badge-block-1');
+        const timeDisplay = c.date_range || (c.start_date && c.end_date ? `${c.start_date} - ${c.end_date}` : 'Theo lịch kỳ');
+
+        html += `
+            <tr data-key="${c.key}">
+                <td><strong>${c.course_code}</strong></td>
+                <td>${c.course_name}</td>
+                <td><strong>${c.class_name}</strong></td>
+                <td><span style="font-size: 0.8rem; color: #64748b;">📅 ${timeDisplay}</span></td>
+                <td class="text-center">
+                    <span class="badge-block ${blockClass}">${c.block || 'Block 1'}</span>
+                </td>
+                <td class="text-center"><strong>${c.count}</strong> SV</td>
+                <td>
+                    <select class="status-select-sm" data-key="${c.key}" data-status="${c.class_status}">
+                        <option value="Ongoing" ${c.class_status === 'Ongoing' ? 'selected' : ''}>🟢 Đang học</option>
+                        <option value="Upcoming" ${c.class_status === 'Upcoming' ? 'selected' : ''}>🕒 Chưa học</option>
+                        <option value="Completed" ${c.class_status === 'Completed' ? 'selected' : ''}>🏁 Đã hoàn thành</option>
+                    </select>
+                </td>
+            </tr>
+        `;
+    });
+
+    modalClassesTableBody.innerHTML = html;
+
+    // Gắn sự kiện đổi dropdown trạng thái
+    const selects = modalClassesTableBody.querySelectorAll('.status-select-sm');
+    selects.forEach(sel => {
+        sel.addEventListener('change', (e) => {
+            const key = e.target.dataset.key;
+            const newStatus = e.target.value;
+            e.target.setAttribute('data-status', newStatus);
+
+            const targetObj = modalClassesList.find(item => item.key === key);
+            if (targetObj) targetObj.class_status = newStatus;
+
+            updateModalSummary(modalClassesList);
+        });
+    });
+
+    updateModalSummary(modalClassesList);
+}
+
+/**
+ * Cập nhật dòng tóm tắt số lượng trong Modal
+ */
+function updateModalSummary(list) {
+    if (!modalClassesSummaryText) return;
+    const total = list.length;
+    const ongoing = list.filter(c => c.class_status === 'Ongoing').length;
+    const upcoming = list.filter(c => c.class_status === 'Upcoming').length;
+    const completed = list.filter(c => c.class_status === 'Completed').length;
+
+    modalClassesSummaryText.innerHTML = `
+        Tổng: <strong>${total}</strong> lớp (🟢 <strong>${ongoing}</strong> Đang học, 🕒 <strong>${upcoming}</strong> Chưa học, 🏁 <strong>${completed}</strong> Đã hoàn thành)
+    `;
+}
+
+/**
+ * Thao tác nhanh đổi trạng thái hàng loạt trong Modal
+ */
+function setBulkModalStatus(targetBlock, targetStatus) {
+    modalClassesList.forEach(c => {
+        if (targetBlock === 'all' || c.block === targetBlock) {
+            c.class_status = targetStatus;
+        }
+    });
+
+    renderModalClassesTable();
+}
+
+/**
+ * Lưu cấu hình trạng thái vòng đời lớp học vào CSDL (Batch Write)
+ */
+async function handleSaveClassLifecycle() {
+    if (!btnSaveClassLifecycle) return;
+    btnSaveClassLifecycle.disabled = true;
+    btnSaveClassLifecycle.textContent = "Đang lưu cấu hình...";
+
+    try {
+        const statusMap = new Map();
+        modalClassesList.forEach(c => {
+            statusMap.set(c.key, { block: c.block, class_status: c.class_status });
+        });
+
+        // 1. Cập nhật các bản ghi trong allSemesterRecords
+        const recordsToUpdate = [];
+        allSemesterRecords.forEach(r => {
+            const cls = r.class_name || r.class_id || 'Chưa rõ lớp';
+            const code = r.course_code || 'Chưa rõ môn';
+            const key = `${cls}___${code}`;
+
+            const newInfo = statusMap.get(key);
+            if (newInfo && (r.class_status !== newInfo.class_status || r.block !== newInfo.block)) {
+                r.class_status = newInfo.class_status;
+                r.block = newInfo.block;
+                recordsToUpdate.push({
+                    docId: r.docId,
+                    class_status: newInfo.class_status,
+                    block: newInfo.block
+                });
+            }
+        });
+
+        // 2. Batch write lên Firestore collection AcademicRecords
+        if (recordsToUpdate.length > 0) {
+            const CHUNK_SIZE = 450;
+            for (let i = 0; i < recordsToUpdate.length; i += CHUNK_SIZE) {
+                const chunk = recordsToUpdate.slice(i, i + CHUNK_SIZE);
+                const batch = writeBatch(db);
+
+                chunk.forEach(item => {
+                    const docRef = doc(db, 'AcademicRecords', item.docId);
+                    batch.set(docRef, {
+                        class_status: item.class_status,
+                        block: item.block,
+                        updated_at: Timestamp.now()
+                    }, { merge: true });
+                });
+
+                await batch.commit();
+            }
+        }
+
+        // 3. Batch write lên bảng Classes
+        const batchClasses = writeBatch(db);
+        modalClassesList.forEach(c => {
+            const classDocId = `${currentSemester}_${c.course_code}_${c.class_id || c.class_name}`;
+            const classRef = doc(db, 'Classes', classDocId);
+            batchClasses.set(classRef, {
+                class_id: c.class_id || c.class_name,
+                class_name: c.class_name,
+                course_code: c.course_code,
+                course_name: c.course_name,
+                semester: currentSemester,
+                block: c.block,
+                class_status: c.class_status,
+                is_finished: (c.class_status === 'Completed'),
+                updated_at: Timestamp.now()
+            }, { merge: true });
+        });
+        await batchClasses.commit();
+
+        closeClassLifecycleModal();
+        applyFilterAndRender();
+        alert(`✅ Đã lưu cấu hình vòng đời thành công cho ${modalClassesList.length} lớp học!`);
+
+    } catch (error) {
+        console.error("Lỗi lưu trạng thái lớp:", error);
+        alert("Lỗi khi lưu trạng thái lớp: " + error.message);
+    } finally {
+        btnSaveClassLifecycle.disabled = false;
+        btnSaveClassLifecycle.textContent = "💾 Lưu Trạng Thái Lớp";
+    }
 }
 
 /**

@@ -6,7 +6,7 @@
     <title>Nhiệm Vụ Chăm Sóc - Student Care V2</title>
     <link rel="stylesheet" href="css/index.css">
     <link rel="stylesheet" href="css/components.css">
-    <link rel="stylesheet" href="css/tasks.css">
+    <link rel="stylesheet" href="css/tasks.css?v=0.6.0">
 </head>
 <body>
     <div class="app-container">
@@ -52,45 +52,101 @@
 
                 <!-- Toolbar & Bộ lọc -->
                 <div class="tasks-toolbar-card">
-                    <div class="search-box">
-                        <span class="search-icon">🔍</span>
-                        <input type="text" id="inpSearch" class="input-search" placeholder="Tìm theo Mã SV, Họ tên sinh viên...">
+                    <!-- Ô Tìm Kiếm -->
+                    <div class="filter-item filter-search">
+                        <label for="inpSearch" class="filter-label">🔍 Tìm kiếm</label>
+                        <div class="search-box">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="inpSearch" class="input-search" placeholder="Mã SV, họ tên, lớp, môn...">
+                        </div>
                     </div>
-                    <div class="filter-controls">
-                        <!-- Chọn Học kỳ (Mặc định kỳ hiện tại) -->
-                        <select id="selectSemesterFilter" class="filter-select" style="font-weight: 600; color: var(--primary-color); border-color: rgba(111, 66, 193, 0.4); background-color: rgba(111, 66, 193, 0.04);">
+
+                    <!-- Chọn Học kỳ (Mặc định kỳ hiện tại) -->
+                    <div class="filter-item">
+                        <label for="selectSemesterFilter" class="filter-label">🗓️ Học kỳ</label>
+                        <select id="selectSemesterFilter" class="filter-select select-semester">
                             <option value="">Đang tải kỳ học...</option>
                         </select>
+                    </div>
 
-                        <!-- Lọc theo Phạm vi (Chăm sóc / Đứng lớp) -->
+                    <!-- Lọc theo Phạm vi (Chăm sóc / Đứng lớp) -->
+                    <div class="filter-item">
+                        <label for="selectScopeFilter" class="filter-label">🎯 Phạm vi</label>
                         <select id="selectScopeFilter" class="filter-select">
-                            <option value="all">Toàn bộ sinh viên (Phân công + Đứng lớp)</option>
-                            <option value="assigned">🎯 Ca được phân công chăm sóc</option>
+                            <option value="all">Toàn bộ sinh viên</option>
+                            <option value="assigned">🎯 Ca phân công chăm sóc</option>
                             <option value="teaching">🏫 Ca lớp tôi đứng lớp</option>
                         </select>
+                    </div>
 
-                        <!-- Lọc theo Lớp - Môn học -->
+                    <!-- Lọc theo Block -->
+                    <div class="filter-item">
+                        <label for="selectBlockFilter" class="filter-label">📦 Block</label>
+                        <select id="selectBlockFilter" class="filter-select">
+                            <option value="all">Tất cả Block</option>
+                            <option value="Block 1">Block 1</option>
+                            <option value="Block 2">Block 2</option>
+                            <option value="Full">Cả kỳ (Full)</option>
+                        </select>
+                    </div>
+
+                    <!-- Lọc theo Trạng thái lớp -->
+                    <div class="filter-item">
+                        <label for="selectClassStatusFilter" class="filter-label">🏷️ Trạng thái lớp</label>
+                        <select id="selectClassStatusFilter" class="filter-select">
+                            <option value="Ongoing" selected>🟢 Đang học (Chưa xong)</option>
+                            <option value="Upcoming">🕒 Chưa học (Sắp tới)</option>
+                            <option value="Completed">🏁 Đã hoàn thành</option>
+                            <option value="all">Tất cả trạng thái</option>
+                        </select>
+                    </div>
+
+                    <!-- Lọc theo Mức độ vắng -->
+                    <div class="filter-item">
+                        <label for="selectAbsenceFilter" class="filter-label">⚠️ Mức độ vắng</label>
+                        <select id="selectAbsenceFilter" class="filter-select">
+                            <option value="all">Tất cả mức vắng</option>
+                            <option value="all_risk">⚠️ Nguy cơ (Vắng ≥ 2)</option>
+                            <option value="1">Vắng 1 buổi</option>
+                            <option value="2">Vắng 2 buổi</option>
+                            <option value="3">Vắng 3 buổi</option>
+                            <option value="gte4">Vắng ≥ 4 buổi</option>
+                        </select>
+                    </div>
+
+                    <!-- Lọc theo Lớp - Môn học -->
+                    <div class="filter-item filter-class-item">
+                        <label for="selectClassFilter" class="filter-label">🏫 Lớp - Môn học</label>
                         <select id="selectClassFilter" class="filter-select">
                             <option value="all">Tất cả Lớp - Môn học</option>
                         </select>
+                    </div>
 
-                        <!-- Lọc theo GV (chỉ hiện khi Admin xem) -->
-                        <select id="selectTeacherFilter" class="filter-select" style="display: none;">
-                            <option value="all">Tất cả Giảng viên</option>
+                    <!-- Lọc theo GV (chỉ hiện khi Admin xem) -->
+                    <div class="filter-item" id="filterItemTeacher" style="display: none;">
+                        <label for="selectTeacherFilter" class="filter-label">👨‍🏫 Giảng viên CS</label>
+                        <select id="selectTeacherFilter" class="filter-select">
+                            <option value="all">Tất cả Giảng viên CS</option>
                         </select>
+                    </div>
 
-                        <!-- Lọc theo Tình trạng liên lạc -->
+                    <!-- Lọc theo Tình trạng liên lạc -->
+                    <div class="filter-item">
+                        <label for="selectContactStatusFilter" class="filter-label">📞 Liên lạc</label>
                         <select id="selectContactStatusFilter" class="filter-select">
-                            <option value="all">Tất cả liên lạc</option>
+                            <option value="all">Tất cả trạng thái</option>
                             <option value="Chưa liên lạc">Chưa liên lạc</option>
                             <option value="Đã liên lạc">Đã liên lạc</option>
                             <option value="Không nghe máy">Không nghe máy</option>
                             <option value="Sai số điện thoại">Sai số điện thoại</option>
                         </select>
+                    </div>
 
-                        <!-- Lọc theo Tình trạng chăm sóc -->
+                    <!-- Lọc theo Tình trạng chăm sóc -->
+                    <div class="filter-item">
+                        <label for="selectCareStatusFilter" class="filter-label">📊 Kết quả CS</label>
                         <select id="selectCareStatusFilter" class="filter-select">
-                            <option value="all">Tất cả kết quả CS</option>
+                            <option value="all">Tất cả kết quả</option>
                             <option value="none">Chưa chăm sóc</option>
                             <option value="Đã đi học">Đã đi học</option>
                             <option value="Sẽ đi học">Sẽ đi học</option>
@@ -109,7 +165,7 @@
                                 <th class="col-student-id">Mã SV</th>
                                 <th class="col-name">Họ Tên</th>
                                 <th class="col-course">Môn Học</th>
-                                <th class="col-class">Lớp</th>
+                                <th class="col-class">Lớp & Block</th>
                                 <th class="col-absence text-center">Vắng</th>
                                 <th id="thTeacher" class="col-caregiver" style="display: none;">GV Chăm Sóc</th>
                                 <th class="col-contact-status">Tình Trạng Liên Lạc</th>
@@ -135,7 +191,7 @@
     <div id="toastContainer" class="toast-container"></div>
 
     <!-- Scripts -->
-    <script type="module" src="js/layout.js"></script>
-    <script type="module" src="js/tasks.js"></script>
+    <script type="module" src="js/layout.js?v=0.6.0"></script>
+    <script type="module" src="js/tasks.js?v=0.6.0"></script>
 </body>
 </html>

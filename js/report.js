@@ -112,10 +112,16 @@ function setupEventListeners() {
 
     // 6. Lọc danh sách chi tiết ở Tab 4
     const inpDetail = $('inpSearchDetail');
+    const filterBlock = $('filterDetailBlock');
+    const filterClassStatus = $('filterDetailClassStatus');
+    const filterAbsence = $('filterDetailAbsence');
     const filterTeacher = $('filterDetailTeacher');
     const filterCare = $('filterDetailCareStatus');
 
     if (inpDetail) inpDetail.addEventListener('input', renderStudentsDetailTable);
+    if (filterBlock) filterBlock.addEventListener('change', renderStudentsDetailTable);
+    if (filterClassStatus) filterClassStatus.addEventListener('change', renderStudentsDetailTable);
+    if (filterAbsence) filterAbsence.addEventListener('change', renderStudentsDetailTable);
     if (filterTeacher) filterTeacher.addEventListener('change', renderStudentsDetailTable);
     if (filterCare) filterCare.addEventListener('change', renderStudentsDetailTable);
 }
@@ -659,6 +665,9 @@ function populateDetailTeacherFilter() {
 
 function renderStudentsDetailTable() {
     const searchVal = $('inpSearchDetail') ? $('inpSearchDetail').value.trim().toLowerCase() : '';
+    const blockVal = $('filterDetailBlock') ? $('filterDetailBlock').value : 'all';
+    const classStatusVal = $('filterDetailClassStatus') ? $('filterDetailClassStatus').value : 'all';
+    const absenceVal = $('filterDetailAbsence') ? $('filterDetailAbsence').value : 'all';
     const teacherVal = $('filterDetailTeacher') ? $('filterDetailTeacher').value : 'all';
     const careVal = $('filterDetailCareStatus') ? $('filterDetailCareStatus').value : 'all';
 
@@ -669,13 +678,33 @@ function renderStudentsDetailTable() {
             (r.class_name && r.class_name.toLowerCase().includes(searchVal)) ||
             (r.course_code && r.course_code.toLowerCase().includes(searchVal));
 
+        const rBlock = r.block || 'Block 1';
+        const matchBlock = (blockVal === 'all') || (rBlock === blockVal);
+
+        const rStatus = r.class_status || 'Ongoing';
+        const matchClassStatus = (classStatusVal === 'all') || (rStatus === classStatusVal);
+
+        const absences = r.total_absences || 0;
+        let matchAbsence = true;
+        if (absenceVal === 'all_risk') {
+            matchAbsence = absences >= 2;
+        } else if (absenceVal === '1') {
+            matchAbsence = absences === 1;
+        } else if (absenceVal === '2') {
+            matchAbsence = absences === 2;
+        } else if (absenceVal === '3') {
+            matchAbsence = absences === 3;
+        } else if (absenceVal === 'gte4') {
+            matchAbsence = absences >= 4;
+        }
+
         const matchTeacher = (teacherVal === 'all') || (r.caregiver_id === teacherVal);
 
         let matchCare = true;
         if (careVal === 'none') matchCare = !r.care_status;
         else if (careVal !== 'all') matchCare = (r.care_status === careVal);
 
-        return matchSearch && matchTeacher && matchCare;
+        return matchSearch && matchBlock && matchClassStatus && matchAbsence && matchTeacher && matchCare;
     });
 
     const tbody = $('tableBodyStudentsDetail');
@@ -690,12 +719,20 @@ function renderStudentsDetailTable() {
     filtered.forEach(r => {
         const contactBadge = getContactBadgeHtml(r.contact_status);
         const careBadge = getCareBadgeHtml(r.care_status);
+        const blockName = r.block || 'Block 1';
+        const blockClass = blockName === 'Block 2' ? 'badge-block-2' : (blockName === 'Full' ? 'badge-block-full' : 'badge-block-1');
+        const statusIcon = r.class_status === 'Completed' ? '🏁' : (r.class_status === 'Upcoming' ? '🕒' : '🟢');
 
         rowsHtml += `
             <tr>
                 <td><strong>${r.student_id || '-'}</strong></td>
                 <td>${r.name || '-'}</td>
-                <td><span class="badge badge-light">🏫 ${r.class_name || r.class_id || '-'}</span></td>
+                <td>
+                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                        <span>${statusIcon} <strong>${r.class_name || r.class_id || '-'}</strong></span>
+                        <span class="badge-block ${blockClass}" style="align-self: flex-start; font-size: 0.7rem;">${blockName}</span>
+                    </div>
+                </td>
                 <td><span style="font-size: 0.8rem; color: var(--text-secondary);">${r.course_code || '-'}</span></td>
                 <td class="text-center" style="color: #ef4444; font-weight: 700;">${r.total_absences || 0}</td>
                 <td><strong>${r.caregiver_id || '-'}</strong></td>

@@ -25,8 +25,12 @@ const kpiRate = document.getElementById('kpiRate');
 const inpSearch = document.getElementById('inpSearch');
 const selectSemesterFilter = document.getElementById('selectSemesterFilter');
 const selectScopeFilter = document.getElementById('selectScopeFilter');
+const selectBlockFilter = document.getElementById('selectBlockFilter');
+const selectClassStatusFilter = document.getElementById('selectClassStatusFilter');
+const selectAbsenceFilter = document.getElementById('selectAbsenceFilter');
 const selectClassFilter = document.getElementById('selectClassFilter');
 const selectTeacherFilter = document.getElementById('selectTeacherFilter');
+const filterItemTeacher = document.getElementById('filterItemTeacher');
 const selectContactStatusFilter = document.getElementById('selectContactStatusFilter');
 const selectCareStatusFilter = document.getElementById('selectCareStatusFilter');
 const tasksTableBody = document.getElementById('tasksTableBody');
@@ -52,6 +56,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 4. Đăng ký sự kiện tìm kiếm & lọc
         inpSearch.addEventListener('input', applyFilters);
         if (selectScopeFilter) selectScopeFilter.addEventListener('change', onScopeOrTeacherChange);
+        if (selectBlockFilter) selectBlockFilter.addEventListener('change', onScopeOrTeacherChange);
+        if (selectClassStatusFilter) selectClassStatusFilter.addEventListener('change', onScopeOrTeacherChange);
+        if (selectAbsenceFilter) selectAbsenceFilter.addEventListener('change', onScopeOrTeacherChange);
         if (selectTeacherFilter) selectTeacherFilter.addEventListener('change', onScopeOrTeacherChange);
         if (selectClassFilter) selectClassFilter.addEventListener('change', applyFilters);
         selectContactStatusFilter.addEventListener('change', applyFilters);
@@ -66,6 +73,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Reset search và các bộ lọc về mặc định
                 if (inpSearch) inpSearch.value = '';
                 if (selectScopeFilter) selectScopeFilter.value = 'all';
+                if (selectBlockFilter) selectBlockFilter.value = 'all';
+                if (selectClassStatusFilter) selectClassStatusFilter.value = 'Ongoing';
+                if (selectAbsenceFilter) selectAbsenceFilter.value = 'all';
                 if (selectContactStatusFilter) selectContactStatusFilter.value = 'all';
                 if (selectCareStatusFilter) selectCareStatusFilter.value = 'all';
                 if (selectTeacherFilter) selectTeacherFilter.value = 'all';
@@ -252,19 +262,29 @@ async function loadTasks() {
                 const data = docSnap.data();
                 data.id = docSnap.id;
                 data.is_assigned = true;
+                data.is_teaching = (data.teacher_id === teacherId) || (Array.isArray(data.teacher_ids) && data.teacher_ids.includes(teacherId));
+                if (!data.block) data.block = 'Block 1';
+                if (!data.class_status) data.class_status = 'Ongoing';
                 tasksMap.set(docSnap.id, data);
             });
 
             snapTeaching.forEach(docSnap => {
                 const data = docSnap.data();
                 data.id = docSnap.id;
+                if (!data.block) data.block = 'Block 1';
+                if (!data.class_status) data.class_status = 'Ongoing';
                 if (tasksMap.has(docSnap.id)) {
                     tasksMap.get(docSnap.id).is_teaching = true;
                 } else {
                     data.is_teaching = true;
+                    data.is_assigned = (data.caregiver_id === teacherId);
                     tasksMap.set(docSnap.id, data);
                 }
             });
+
+            // Ẩn cột GV Chăm Sóc & bộ lọc GV cho vai trò Teacher
+            if (thTeacher) thTeacher.style.display = 'none';
+            if (filterItemTeacher) filterItemTeacher.style.display = 'none';
 
         } else {
             // 2. Admin / Super Admin: Query toàn bộ ca trong activeSemester
@@ -278,14 +298,16 @@ async function loadTasks() {
                 const data = docSnap.data();
                 data.id = docSnap.id;
                 data.is_assigned = !!(data.caregiver_id && data.caregiver_id === teacherId);
-                data.is_teaching = !!(data.teacher_id && data.teacher_id === teacherId);
+                data.is_teaching = (data.teacher_id === teacherId) || (Array.isArray(data.teacher_ids) && data.teacher_ids.includes(teacherId));
+                if (!data.block) data.block = 'Block 1';
+                if (!data.class_status) data.class_status = 'Ongoing';
                 tasksMap.set(docSnap.id, data);
                 if (data.caregiver_id) teacherSet.add(data.caregiver_id);
             });
 
-            // Hiển thị cột GV Chăm Sóc & bộ lọc GV
+            // Hiển thị cột GV Chăm Sóc & bộ lọc GV cho Admin
             if (thTeacher) thTeacher.style.display = '';
-            if (selectTeacherFilter) selectTeacherFilter.style.display = '';
+            if (filterItemTeacher) filterItemTeacher.style.display = 'flex';
         }
 
         allTasks = Array.from(tasksMap.values());
@@ -338,13 +360,16 @@ async function loadTasks() {
 }
 
 /**
- * Khi thay đổi Phạm vi (Scope) hoặc Giảng viên CS -> Tự động cập nhật danh mục Lớp - Môn học
+ * Khi thay đổi Phạm vi (Scope), Block, Trạng thái lớp, Mức độ vắng hoặc Giảng viên CS -> Tự động cập nhật danh mục Lớp - Môn học
  */
 function onScopeOrTeacherChange() {
     const scopeVal = selectScopeFilter ? selectScopeFilter.value : 'all';
     const teacherVal = selectTeacherFilter ? selectTeacherFilter.value : 'all';
+    const absenceVal = selectAbsenceFilter ? selectAbsenceFilter.value : 'all';
+    const blockVal = selectBlockFilter ? selectBlockFilter.value : 'all';
+    const classStatusVal = selectClassStatusFilter ? selectClassStatusFilter.value : 'Ongoing';
 
-    // Lọc tập dữ liệu theo Scope và Giảng viên
+    // Lọc tập dữ liệu theo Scope, Giảng viên, Mức độ vắng, Block và Trạng thái lớp
     const scopedTasks = allTasks.filter(item => {
         let matchScope = true;
         if (scopeVal === 'assigned') matchScope = item.is_assigned === true;
@@ -354,7 +379,21 @@ function onScopeOrTeacherChange() {
         if (teacherVal === 'unassigned') matchTeacher = !item.caregiver_id;
         else if (teacherVal !== 'all') matchTeacher = (item.caregiver_id === teacherVal);
 
-        return matchScope && matchTeacher;
+        const absences = item.total_absences || 0;
+        let matchAbsence = true;
+        if (absenceVal === 'all_risk') matchAbsence = absences >= 2;
+        else if (absenceVal === '1') matchAbsence = absences === 1;
+        else if (absenceVal === '2') matchAbsence = absences === 2;
+        else if (absenceVal === '3') matchAbsence = absences === 3;
+        else if (absenceVal === 'gte4') matchAbsence = absences >= 4;
+
+        const rBlock = item.block || 'Block 1';
+        let matchBlock = (blockVal === 'all') || (rBlock === blockVal);
+
+        const rStatus = item.class_status || 'Ongoing';
+        let matchClassStatus = (classStatusVal === 'all') || (rStatus === classStatusVal);
+
+        return matchScope && matchTeacher && matchAbsence && matchBlock && matchClassStatus;
     });
 
     // Cập nhật lại dropdown Lớp - Môn học theo đúng tập dữ liệu đã lọc
@@ -421,6 +460,9 @@ function populateClassFilter(tasks) {
 function applyFilters() {
     const searchVal = inpSearch.value.trim().toLowerCase();
     const scopeVal = selectScopeFilter ? selectScopeFilter.value : 'all';
+    const blockVal = selectBlockFilter ? selectBlockFilter.value : 'all';
+    const classStatusVal = selectClassStatusFilter ? selectClassStatusFilter.value : 'Ongoing';
+    const absenceVal = selectAbsenceFilter ? selectAbsenceFilter.value : 'all';
     const classVal = selectClassFilter ? selectClassFilter.value : 'all';
     const contactVal = selectContactStatusFilter.value;
     const careVal = selectCareStatusFilter.value;
@@ -442,7 +484,30 @@ function applyFilters() {
             matchScope = item.is_teaching === true;
         }
 
-        // 3. Lọc theo Lớp - Môn học
+        // 3. Lọc theo Block
+        const rBlock = item.block || 'Block 1';
+        let matchBlock = (blockVal === 'all') || (rBlock === blockVal);
+
+        // 4. Lọc theo Trạng thái lớp (Mặc định Ongoing - Đang học)
+        const rStatus = item.class_status || 'Ongoing';
+        let matchClassStatus = (classStatusVal === 'all') || (rStatus === classStatusVal);
+
+        // 5. Lọc theo Mức độ vắng
+        const absences = item.total_absences || 0;
+        let matchAbsence = true;
+        if (absenceVal === 'all_risk') {
+            matchAbsence = absences >= 2;
+        } else if (absenceVal === '1') {
+            matchAbsence = absences === 1;
+        } else if (absenceVal === '2') {
+            matchAbsence = absences === 2;
+        } else if (absenceVal === '3') {
+            matchAbsence = absences === 3;
+        } else if (absenceVal === 'gte4') {
+            matchAbsence = absences >= 4;
+        }
+
+        // 6. Lọc theo Lớp - Môn học
         let matchClass = true;
         if (classVal !== 'all') {
             const [filterClass, filterCourse] = classVal.split('___');
@@ -451,11 +516,11 @@ function applyFilters() {
             matchClass = (itemClass === filterClass && itemCourse === filterCourse);
         }
 
-        // 4. Lọc Tình trạng liên lạc
+        // 7. Lọc Tình trạng liên lạc
         const currentContact = item.contact_status || 'Chưa liên lạc';
         const matchContact = (contactVal === 'all') || (currentContact === contactVal);
 
-        // 5. Lọc Tình trạng chăm sóc
+        // 8. Lọc Tình trạng chăm sóc
         let matchCare = true;
         if (careVal === 'none') {
             matchCare = !item.care_status;
@@ -463,7 +528,7 @@ function applyFilters() {
             matchCare = (item.care_status === careVal);
         }
 
-        // 6. Lọc Giảng viên chăm sóc (Admin)
+        // 9. Lọc Giảng viên chăm sóc (Admin)
         let matchTeacher = true;
         if (teacherVal === 'unassigned') {
             matchTeacher = !item.caregiver_id;
@@ -471,7 +536,7 @@ function applyFilters() {
             matchTeacher = (item.caregiver_id === teacherVal);
         }
 
-        return matchSearch && matchScope && matchClass && matchContact && matchCare && matchTeacher;
+        return matchSearch && matchScope && matchBlock && matchClassStatus && matchAbsence && matchClass && matchContact && matchCare && matchTeacher;
     });
 
     // Cập nhật Thẻ KPI
@@ -563,6 +628,10 @@ function renderTasksTable(tasks) {
             roleBadgeHtml = `<div class="badge-role badge-role-teaching">🏫 Đứng lớp</div>`;
         }
 
+        const blockName = item.block || 'Block 1';
+        const blockClass = blockName === 'Block 2' ? 'badge-block-2' : (blockName === 'Full' ? 'badge-block-full' : 'badge-block-1');
+        const statusIcon = item.class_status === 'Completed' ? '🏁' : (item.class_status === 'Upcoming' ? '🕒' : '🟢');
+
         html += `
             <!-- Dòng Chính (Master Row) -->
             <tr class="expandable-row ${isExpanded ? 'row-expanded' : ''}" id="row-${item.id}" data-docid="${item.id}" data-studentid="${item.student_id}">
@@ -577,7 +646,12 @@ function renderTasksTable(tasks) {
                 </td>
                 <td class="col-name" data-label="Họ Tên">${item.name || '-'}</td>
                 <td class="col-course" data-label="Môn Học">${item.course_code || '-'}</td>
-                <td class="col-class" data-label="Lớp">${item.class_name || item.class_id || '-'}</td>
+                <td class="col-class" data-label="Lớp & Block">
+                    <div style="display: flex; flex-direction: column; gap: 3px;">
+                        <span>${statusIcon} <strong>${item.class_name || item.class_id || '-'}</strong></span>
+                        <span class="badge-block ${blockClass}" style="align-self: flex-start;">${blockName}</span>
+                    </div>
+                </td>
                 <td class="col-absence text-center ${absenceClass}" data-label="Vắng">${absence}</td>
                 ${!isTeacher ? `<td class="col-caregiver" data-label="GV Chăm Sóc">${item.caregiver_id || '-'}</td>` : ''}
                 <td class="col-contact-status" data-label="Liên Lạc">
