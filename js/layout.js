@@ -38,6 +38,10 @@ function renderLayout(session) {
                     <span class="nav-icon">👨‍🏫</span>
                     <span class="nav-text">Quản lý Giảng viên</span>
                 </a>
+                <a href="list-subjects.html" class="nav-item ${isActive('list-subjects.html')}">
+                    <span class="nav-icon">📖</span>
+                    <span class="nav-text">Quản lý Môn học</span>
+                </a>
                 <a href="assign.html" class="nav-item ${isActive('assign.html')}">
                     <span class="nav-icon">🎯</span>
                     <span class="nav-text">Phân công</span>

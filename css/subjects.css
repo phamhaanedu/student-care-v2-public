@@ -1,0 +1,341 @@
+/* subjects.css - Styling cho Quản lý Danh mục Môn học */
+
+.table-subjects-container {
+    overflow-x: auto;
+    margin-top: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: #fff;
+}
+
+.table-subjects {
+    table-layout: fixed;
+    width: 100%;
+    min-width: 960px;
+    border-collapse: collapse;
+}
+
+/* Kích thước & Căn chỉnh các cột */
+.col-code {
+    width: 190px;
+}
+
+.col-name {
+    width: 240px;
+}
+
+.col-major {
+    width: 160px;
+}
+
+.col-mode {
+    width: 130px;
+}
+
+.col-sessions {
+    width: 90px;
+}
+
+.col-absences {
+    width: 100px;
+}
+
+.col-prereq {
+    width: 100px;
+}
+
+.col-action {
+    width: 90px;
+}
+
+/* Ô tìm kiếm môn học */
+.input-search-subject {
+    flex: 1;
+    max-width: 380px;
+    padding: 8px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-size: 0.88rem;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.input-search-subject:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.15);
+}
+
+.badge-count {
+    background: #f3ebff;
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 0.82rem;
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+/* Các ô input và select trong bảng */
+.table-subjects td input[type="text"],
+.table-subjects td input[type="number"],
+.table-subjects td select {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    background-color: #fff;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.table-subjects td input:focus,
+.table-subjects td select:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(111, 66, 193, 0.1);
+}
+
+/* Dòng nhập liệu thêm mới (Add Row) */
+.row-add {
+    background-color: rgba(111, 66, 193, 0.04);
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.row-add input,
+.row-add select {
+    background-color: #fff;
+    font-weight: 500;
+}
+
+/* Dòng có thay đổi (Dirty state) */
+.row-dirty {
+    background-color: #fff3cd !important;
+}
+
+.row-dirty input,
+.row-dirty select {
+    background-color: rgba(255, 255, 255, 0.85);
+    border-color: #f59e0b;
+}
+
+/* Nút thêm / thao tác */
+.table-subjects .btn-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    background: #fff;
+    transition: all 0.2s ease;
+}
+
+.btn-add {
+    background-color: var(--primary-color) !important;
+    color: #fff !important;
+    border: none !important;
+    font-size: 1.2rem !important;
+    font-weight: 700;
+}
+
+.btn-add:hover {
+    background-color: #5a32a3 !important;
+    transform: scale(1.05);
+}
+
+.btn-delete {
+    color: #dc3545;
+}
+
+.btn-delete:hover {
+    background-color: #fee2e2;
+    border-color: #fca5a5;
+}
+
+/* Tag môn tiên quyết */
+.tag-prereq {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: 4px;
+}
+
+/* Nút Quét Môn Chưa Có */
+.btn-scan-missing {
+    background: linear-gradient(135deg, #6f42c1, #8b5cf6) !important;
+    color: #fff !important;
+    border: none !important;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(111, 66, 193, 0.25);
+    transition: all 0.2s ease;
+}
+
+.btn-scan-missing:hover {
+    background: linear-gradient(135deg, #5b32a3, #7c3aed) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(111, 66, 193, 0.35);
+}
+
+/* Modal Quét Môn Chưa Có */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+    background: #fff;
+    padding: 24px;
+    border-radius: 12px;
+    width: 650px;
+    max-width: 92%;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    animation: slideUp 0.25s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.missing-subject-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    background: #faf5ff;
+    border-bottom: 1px solid #f3e8ff;
+    transition: background 0.15s ease;
+}
+
+.missing-subject-card:last-child {
+    border-bottom: none;
+}
+
+.missing-subject-card:hover {
+    background: #f3e8ff;
+}
+
+.missing-subject-info strong {
+    color: #6f42c1;
+    font-size: 0.95rem;
+}
+
+.missing-subject-meta {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 3px;
+}
+
+.badge-missing-count {
+    background: #e9d5ff;
+    color: #6b21a8;
+    font-size: 0.76rem;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 10px;
+}
+
+/* ==========================================================================
+   RESPONSIVE CARD-BASED LAYOUT CHO MOBILE (<= 992px)
+   ========================================================================== */
+@media (max-width: 992px) {
+    .table-subjects,
+    .table-subjects tbody,
+    .table-subjects tr,
+    .table-subjects td {
+        display: block;
+        width: 100%;
+    }
+
+    .table-subjects {
+        min-width: unset;
+    }
+
+    .table-subjects thead {
+        display: none;
+    }
+
+    .table-subjects tr {
+        margin-bottom: 16px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-md);
+        padding: 10px 14px;
+        background: #fff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    .table-subjects td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px dashed #eee;
+        text-align: right;
+    }
+
+    .table-subjects td:last-child {
+        border-bottom: none;
+        justify-content: center;
+        background-color: #f8f9fa;
+        border-radius: 6px;
+        margin-top: 8px;
+        padding: 8px 0;
+    }
+
+    .table-subjects td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--text-secondary);
+        width: 40%;
+        text-align: left;
+        font-size: 0.85rem;
+    }
+
+    .table-subjects td input:not([type="checkbox"]),
+    .table-subjects td select {
+        width: 58%;
+        text-align: left;
+    }
+
+    .table-subjects td input[type="checkbox"] {
+        margin-right: 0;
+    }
+
+    .table-subjects td.text-center {
+        text-align: right !important;
+    }
+
+    .table-subjects td.text-center::before {
+        text-align: left !important;
+    }
+
+    .table-subjects td[data-label="Thao tác"]::before {
+        display: none;
+    }
+}

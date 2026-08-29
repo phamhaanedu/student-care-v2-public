@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trang chủ - Student Care V2</title>
+    <title>Nhiệm Vụ Chăm Sóc - Student Care V2</title>
     <link rel="stylesheet" href="css/index.css">
     <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/tasks.css">
 </head>
 <body>
     <div class="app-container">
@@ -17,18 +18,114 @@
             <header id="header" class="header"></header>
             
             <div class="content-body">
-                <div class="card">
-                    <h2 class="card-title">Xin chào, đây là trang Tổng quan (Dashboard)</h2>
-                    <p style="color: var(--text-secondary); font-size: 0.9rem;">
-                        Tính năng Thống kê (Biểu đồ) cho nhiệm vụ chăm sóc sinh viên sẽ được cập nhật sau.
-                        <br>Vui lòng sử dụng thanh điều hướng bên trái để thao tác các tính năng tương ứng với quyền hạn của bạn.
-                    </p>
+                <!-- KPI Summary Cards -->
+                <div class="kpi-grid">
+                    <div class="kpi-card kpi-total">
+                        <div class="kpi-icon">📋</div>
+                        <div class="kpi-info">
+                            <div class="kpi-value" id="kpiTotal">0</div>
+                            <div class="kpi-label">Tổng ca phân công</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card kpi-pending">
+                        <div class="kpi-icon">⏳</div>
+                        <div class="kpi-info">
+                            <div class="kpi-value" id="kpiPending">0</div>
+                            <div class="kpi-label">Chưa chăm sóc</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card kpi-completed">
+                        <div class="kpi-icon">✅</div>
+                        <div class="kpi-info">
+                            <div class="kpi-value" id="kpiCompleted">0</div>
+                            <div class="kpi-label">Đã chăm sóc</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card kpi-rate">
+                        <div class="kpi-icon">📈</div>
+                        <div class="kpi-info">
+                            <div class="kpi-value" id="kpiRate">0%</div>
+                            <div class="kpi-label">Tỷ lệ hoàn thành</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Toolbar & Bộ lọc -->
+                <div class="tasks-toolbar-card">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="inpSearch" class="input-search" placeholder="Tìm theo Mã SV, Họ tên sinh viên...">
+                    </div>
+                    <div class="filter-controls">
+                        <!-- Lọc theo Phạm vi (Chăm sóc / Đứng lớp) -->
+                        <select id="selectScopeFilter" class="filter-select">
+                            <option value="all">Toàn bộ sinh viên (Phân công + Đứng lớp)</option>
+                            <option value="assigned">🎯 Ca được phân công chăm sóc</option>
+                            <option value="teaching">🏫 Ca lớp tôi đứng lớp</option>
+                        </select>
+
+                        <!-- Lọc theo GV (chỉ hiện khi Admin xem) -->
+                        <select id="selectTeacherFilter" class="filter-select" style="display: none;">
+                            <option value="all">Tất cả Giảng viên</option>
+                        </select>
+
+                        <!-- Lọc theo Tình trạng liên lạc -->
+                        <select id="selectContactStatusFilter" class="filter-select">
+                            <option value="all">Tất cả liên lạc</option>
+                            <option value="Chưa liên lạc">Chưa liên lạc</option>
+                            <option value="Đã liên lạc">Đã liên lạc</option>
+                            <option value="Không nghe máy">Không nghe máy</option>
+                            <option value="Sai số điện thoại">Sai số điện thoại</option>
+                        </select>
+
+                        <!-- Lọc theo Tình trạng chăm sóc -->
+                        <select id="selectCareStatusFilter" class="filter-select">
+                            <option value="all">Tất cả kết quả CS</option>
+                            <option value="none">Chưa chăm sóc</option>
+                            <option value="Đã đi học">Đã đi học</option>
+                            <option value="Sẽ đi học">Sẽ đi học</option>
+                            <option value="Nghỉ học kỳ">Nghỉ học kỳ</option>
+                            <option value="Lý do khác">Lý do khác</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Bảng Danh Sách Nhiệm Vụ (Expandable Data Table) -->
+                <div class="table-tasks-container">
+                    <table class="table-tasks">
+                        <thead>
+                            <tr>
+                                <th class="col-expand text-center" style="width: 44px;"></th>
+                                <th class="col-student-id">Mã SV</th>
+                                <th class="col-name">Họ Tên</th>
+                                <th class="col-course">Môn Học</th>
+                                <th class="col-class">Lớp</th>
+                                <th class="col-absence text-center">Vắng</th>
+                                <th id="thTeacher" class="col-caregiver" style="display: none;">GV Chăm Sóc</th>
+                                <th class="col-contact-status">Tình Trạng Liên Lạc</th>
+                                <th class="col-care-status">Tình Trạng CS</th>
+                                <th class="col-care-time">Lần CS Cuối</th>
+                                <th class="col-actions text-center">Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tasksTableBody">
+                            <tr>
+                                <td colspan="11" class="text-center" style="padding: 40px;">
+                                    <div class="loader" style="display: inline-block; width: 32px; height: 32px; border-top-color: var(--primary-color);"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- Script điều khiển Layout -->
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
     <script type="module" src="js/layout.js"></script>
+    <script type="module" src="js/tasks.js"></script>
 </body>
 </html>

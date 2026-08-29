@@ -16,7 +16,7 @@
 
 /* Căn chỉnh kích thước các cột để đảm bảo thẩm mỹ */
 .col-profile {
-    width: 260px;
+    width: 220px;
 }
 
 .col-job {
@@ -120,8 +120,11 @@
 /* Modal ACL Styles */
 .modal-overlay {
     position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.5);
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -152,40 +155,43 @@
 
 /* RESPONSIVE CARD-BASED LAYOUT CHO MOBILE */
 @media (max-width: 992px) {
-    .table-teachers, 
-    .table-teachers tbody, 
-    .table-teachers tr, 
+
+    .table-teachers,
+    .table-teachers tbody,
+    .table-teachers tr,
     .table-teachers td {
         display: block;
         width: 100%;
     }
-    
+
     .table-teachers {
         min-width: unset;
     }
-    
+
     .table-teachers thead {
-        display: none; /* Hide table headers */
+        display: none;
+        /* Hide table headers */
     }
-    
+
     .table-teachers tr {
         margin-bottom: 20px;
         border: 1px solid var(--border-color);
         border-radius: var(--border-radius-md);
         padding: 10px;
         background: #fff;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
-    
+
     .table-teachers td {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
         padding: 12px 5px;
         border-bottom: 1px dashed #eee;
-        text-align: right; /* Default align for right side content */
+        text-align: right;
+        /* Default align for right side content */
     }
-    
+
     .table-teachers td:last-child {
         border-bottom: none;
         justify-content: center;
@@ -193,7 +199,7 @@
         border-radius: 8px;
         margin-top: 10px;
     }
-    
+
     .table-teachers td::before {
         content: attr(data-label);
         font-weight: 600;
@@ -204,28 +210,29 @@
         padding-top: 5px;
         font-size: 0.9rem;
     }
-    
+
     /* Adjust inputs width */
-    .table-teachers td input:not([type="checkbox"]), 
-    .table-teachers td select, 
+    .table-teachers td input:not([type="checkbox"]),
+    .table-teachers td select,
     .stacked-inputs {
         width: 60%;
         margin: 0;
         text-align: left;
     }
-    
+
     .table-teachers td input[type="checkbox"] {
         margin-right: 0;
     }
-    
+
     .table-teachers td.text-center {
-        text-align: right !important; /* Override text-center on mobile */
+        text-align: right !important;
+        /* Override text-center on mobile */
     }
-    
+
     .table-teachers td.text-center::before {
         text-align: left !important;
     }
-    
+
     /* Cột thao tác không có label */
     .table-teachers td[data-label="Thao tác"]::before {
         display: none;

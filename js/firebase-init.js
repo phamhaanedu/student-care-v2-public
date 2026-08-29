@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, query, where, getDocs, doc, getDoc, setDoc, limit, writeBatch, updateDoc, Timestamp, orderBy, startAfter } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, query, where, getDocs, doc, getDoc, setDoc, deleteDoc, limit, writeBatch, updateDoc, Timestamp, orderBy, startAfter } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -19,4 +19,4 @@ const provider = new GoogleAuthProvider();
 // Yêu cầu lấy email
 provider.addScope('email');
 
-export { app, db, auth, provider, signInWithPopup, onAuthStateChanged, signOut, collection, query, where, getDocs, doc, getDoc, setDoc, limit, writeBatch, updateDoc, Timestamp, orderBy, startAfter };
+export { app, db, auth, provider, signInWithPopup, onAuthStateChanged, signOut, collection, query, where, getDocs, doc, getDoc, setDoc, deleteDoc, limit, writeBatch, updateDoc, Timestamp, orderBy, startAfter };

@@ -1,0 +1,1075 @@
+/* tasks.css - Styling cho Không Gian Làm Việc Giảng Viên & Expandable Data Table (Accordion) */
+
+/* ==========================================================================
+   1. KPI Summary Cards
+   ========================================================================== */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.kpi-card {
+    background: #fff;
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border-color);
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: var(--box-shadow-sm);
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-left: 4px solid var(--primary-color);
+}
+
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--box-shadow-md);
+}
+
+.kpi-card.kpi-total { border-left-color: #6f42c1; }
+.kpi-card.kpi-pending { border-left-color: #fd7e14; }
+.kpi-card.kpi-completed { border-left-color: #198754; }
+.kpi-card.kpi-rate { border-left-color: #0d6efd; }
+
+.kpi-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    background: #f5f6fa;
+}
+
+.kpi-total .kpi-icon { background: #f3ebff; color: #6f42c1; }
+.kpi-pending .kpi-icon { background: #fff3e6; color: #fd7e14; }
+.kpi-completed .kpi-icon { background: #e6f7ed; color: #198754; }
+.kpi-rate .kpi-icon { background: #e7f1ff; color: #0d6efd; }
+
+.kpi-info {
+    flex: 1;
+}
+
+.kpi-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.kpi-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+/* ==========================================================================
+   2. Toolbar & Filters
+   ========================================================================== */
+.tasks-toolbar-card {
+    background: #fff;
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border-color);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--box-shadow-sm);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    min-width: 240px;
+}
+
+.input-search {
+    width: 100%;
+    padding: 8px 14px 8px 36px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.input-search:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.15);
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    pointer-events: none;
+    font-size: 0.9rem;
+}
+
+.filter-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.filter-select {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    background-color: #fff;
+    font-size: 0.88rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.filter-select:focus {
+    border-color: var(--primary-color);
+}
+
+/* ==========================================================================
+   3. Table Tasks & Expandable Accordion Rows
+   ========================================================================== */
+.table-tasks-container {
+    background: #fff;
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--box-shadow-sm);
+    overflow-x: auto;
+}
+
+.table-tasks {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    text-align: left;
+}
+
+.table-tasks thead th {
+    background-color: #f8f9fc;
+    color: var(--text-secondary);
+    font-weight: 600;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+    letter-spacing: 0.5px;
+}
+
+/* Main Row Styling */
+.table-tasks tbody tr.expandable-row {
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.15s ease, border-left 0.15s ease;
+    cursor: pointer;
+}
+
+.table-tasks tbody tr.expandable-row:hover {
+    background-color: #f8fafc;
+}
+
+.table-tasks tbody tr.expandable-row.row-expanded {
+    background-color: #f5f0fc;
+    border-left: 4px solid var(--primary-color);
+}
+
+.table-tasks tbody td {
+    padding: 12px 14px;
+    vertical-align: middle;
+    color: var(--text-primary);
+}
+
+/* Column Specifics */
+.col-expand {
+    width: 44px;
+    text-align: center;
+}
+
+.btn-toggle-expand {
+    background: transparent;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-secondary);
+}
+
+.btn-toggle-expand:hover {
+    background: #eef2ff;
+    border-color: #6f42c1;
+    color: #6f42c1;
+}
+
+.chevron-icon {
+    display: inline-block;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 0.75rem;
+}
+
+.row-expanded .chevron-icon {
+    transform: rotate(90deg);
+    color: #6f42c1;
+    font-weight: bold;
+}
+
+.col-student-id {
+    font-weight: 700;
+    color: var(--primary-color);
+    font-family: monospace;
+    font-size: 0.95rem;
+}
+
+.col-name {
+    font-weight: 600;
+}
+
+.col-absence {
+    font-weight: 700;
+}
+
+.col-absence.text-danger { color: #dc3545; }
+.col-absence.text-warning { color: #fd7e14; }
+.col-absence.text-success { color: #198754; }
+
+/* Status Badges */
+.badge-status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.badge-contact-chua-ll { background-color: #f1f5f9; color: #475569; }
+.badge-contact-da-ll { background-color: #e6f7ed; color: #198754; }
+.badge-contact-khong-nghe { background-color: #fff3e6; color: #fd7e14; }
+.badge-contact-sai-so { background-color: #fee2e2; color: #b91c1c; }
+
+.badge-care-none { color: #94a3b8; font-weight: normal; }
+.badge-care-da-di-hoc { background-color: #e6f7ed; color: #198754; }
+.badge-care-se-di-hoc { background-color: #e7f1ff; color: #0d6efd; }
+.badge-care-nghi-ky { background-color: #fee2e2; color: #b91c1c; }
+.badge-care-ly-do-khac { background-color: #f3ebff; color: #6f42c1; }
+
+.badge-pending { background-color: #fff3e6; color: #d97706; }
+.badge-completed { background-color: #e6f7ed; color: #15803d; }
+
+.btn-care-action {
+    background-color: #f3ebff;
+    color: var(--primary-color);
+    border: 1px solid rgba(111, 66, 193, 0.25);
+    padding: 6px 12px;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.btn-care-action:hover {
+    background-color: var(--primary-color);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(111, 66, 193, 0.3);
+}
+
+.row-expanded .btn-care-action {
+    background-color: #6f42c1;
+    color: #fff;
+}
+
+/* ==========================================================================
+   4. Inline Workspace Container (Accordion Sub-Row)
+   ========================================================================== */
+.table-tasks tbody tr.inline-detail-row {
+    background-color: #fbfbfd;
+    border-bottom: 2px solid #cbd5e1;
+}
+
+.table-tasks tbody tr.inline-detail-row td {
+    padding: 0 !important;
+}
+
+.inline-workspace-wrapper {
+    padding: 18px 22px;
+    border-top: 1px dashed #e2e8f0;
+    animation: inlineSlideDown 0.25s ease-out;
+}
+
+@keyframes inlineSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Inline Header & Profile */
+.inline-header-profile {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    background: #fff;
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border-color);
+    padding: 12px 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.student-meta-main {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.student-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6f42c1, #0d6efd);
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.student-title-block h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.student-id-tag {
+    font-size: 0.8rem;
+    background-color: #f3ebff;
+    color: var(--primary-color);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-family: monospace;
+}
+
+.student-contact-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    margin-top: 6px;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+}
+
+.phone-highlight-block {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.phone-link-large {
+    color: #0d6efd;
+    text-decoration: none;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    transition: color 0.15s;
+}
+
+.phone-link-large:hover {
+    text-decoration: underline;
+    color: #0b5ed7;
+}
+
+.btn-copy-phone-large {
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    color: #4338ca;
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.btn-copy-phone-large:hover {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.contact-link {
+    color: #0d6efd;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.contact-link:hover {
+    text-decoration: underline;
+}
+
+.btn-copy-phone {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    cursor: pointer;
+    margin-left: 4px;
+    transition: all 0.15s;
+}
+
+.btn-copy-phone:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+}
+
+/* 5. Health Bars Visualization */
+.health-bars-box {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.health-item {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    padding: 8px 12px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.health-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+}
+
+.health-status-text {
+    font-weight: 700;
+    font-size: 0.78rem;
+}
+
+.health-good { color: #198754; }
+.health-warning { color: #fd7e14; }
+.health-danger { color: #dc3545; }
+
+.health-bar-track {
+    width: 100%;
+    height: 6px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.health-bar-progress {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+
+.health-bar-progress.health-good { background-color: #198754; }
+.health-bar-progress.health-warning { background-color: #fd7e14; }
+.health-bar-progress.health-danger { background-color: #dc3545; }
+
+/* 6. Smart AI Suggestion Box */
+.smart-suggestion-box {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-left: 4px solid #f97316;
+    border-radius: var(--border-radius-sm);
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.suggestion-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.suggestion-content {
+    flex: 1;
+}
+
+.suggestion-content h4 {
+    margin: 0 0 3px 0;
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: #9a3412;
+}
+
+.suggestion-content p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: #7c2d12;
+    line-height: 1.4;
+}
+
+/* ==========================================================================
+   7. Simultaneous Multi-Card Workspace Grid (3 Khối Thông Tin Đồng Thời)
+   ========================================================================== */
+.inline-dashboard-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 1.05fr 1fr;
+    gap: 16px;
+}
+
+.inline-panel-card {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    padding: 14px 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    display: flex;
+    flex-direction: column;
+}
+
+.panel-header {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.panel-header h4 {
+    margin: 0;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Care Timeline */
+.care-timeline {
+    max-height: 380px;
+    overflow-y: auto;
+    position: relative;
+    padding-left: 14px;
+    border-left: 2px solid #e2e8f0;
+    margin-left: 6px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #f1f5f9;
+}
+
+.timeline-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.timeline-dot {
+    position: absolute;
+    left: -19px;
+    top: 4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    border: 2px solid #fff;
+}
+
+.timeline-header {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2px;
+}
+
+.timeline-caregiver {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.timeline-status-badge {
+    font-size: 0.74rem;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+/* Role Badges in Table */
+.badge-role {
+    font-size: 0.72rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    margin-top: 3px;
+    display: inline-block;
+}
+.badge-role-assigned { background: #f3ebff; color: #6f42c1; border: 1px solid #d8b4fe; }
+.badge-role-teaching { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; }
+.badge-role-both { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
+
+/* Instructor Cumulative Remarks (Dùng chung toàn trường) */
+.instructor-remarks-section {
+    background: #faf7ff;
+    border: 1px solid #e9d5ff;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+}
+
+.remarks-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #6f42c1;
+    margin-bottom: 6px;
+}
+
+.remarks-list {
+    max-height: 140px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.remark-item {
+    background: #fff;
+    border: 1px solid #f3ebff;
+    border-left: 3px solid #6f42c1;
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 0.78rem;
+}
+
+.remark-meta {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    margin-bottom: 2px;
+}
+
+.remark-author {
+    font-weight: 700;
+    color: #4b1a8a;
+}
+
+.remark-text {
+    color: #1e293b;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+.remark-input-group {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.input-new-remark {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+
+.input-new-remark:focus {
+    border-color: #6f42c1;
+    box-shadow: 0 0 0 2px rgba(111, 66, 193, 0.15);
+}
+
+.btn-submit-remark {
+    background: #6f42c1;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+}
+
+.btn-submit-remark:hover {
+    background: #5a32a3;
+}
+
+.timeline-notes {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    margin-top: 4px;
+    background: #f8f9fc;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border-left: 2px solid #cbd5e1;
+}
+
+/* Debts 3-Level Badges */
+.debts-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+/* CSS 1: Môn Tiên Quyết (Nổi Bật Nhất - Priority 1) */
+.debt-badge-prerequisite {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    color: #ffffff;
+    border: 1.5px solid #991b1b;
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.35);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    letter-spacing: 0.3px;
+}
+
+/* CSS 2: Môn Mới Nợ Kỳ Trước (Rõ Hơn Bình Thường - Priority 2) */
+.debt-badge-recent {
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1.5px solid #fb923c;
+    box-shadow: 0 1px 3px rgba(249, 115, 22, 0.15);
+    padding: 3px 9px;
+    border-radius: 5px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* CSS 3: Các Môn Nợ Còn Lại (Bình Thường - Priority 3) */
+.debt-badge-normal {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Tầng 2: Khối Môn Chưa Học */
+.unstudied-panel {
+    margin-top: 12px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 6px;
+    padding: 10px 12px;
+}
+
+.unstudied-header {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #475569;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.unstudied-chips-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 140px;
+    overflow-y: auto;
+}
+
+.chip-unstudied {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+/* 8. Care Action Card (Right Form) */
+.care-action-card {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    padding: 14px 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.form-group label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.form-control {
+    padding: 7px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-size: 0.86rem;
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: inherit;
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(111, 66, 193, 0.15);
+}
+
+textarea.form-control {
+    min-height: 70px;
+    resize: vertical;
+}
+
+.btn-save-care-result {
+    background-color: #198754;
+    color: #fff;
+    padding: 9px 14px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background-color 0.2s, box-shadow 0.2s;
+    margin-top: 4px;
+}
+
+.btn-save-care-result:hover {
+    background-color: #157347;
+    box-shadow: 0 2px 6px rgba(25, 135, 84, 0.25);
+}
+
+.btn-save-care-result:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ==========================================================================
+   9. Toast Notifications
+   ========================================================================== */
+.toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    padding: 12px 18px;
+    border-radius: 8px;
+    background: #1e293b;
+    color: #fff;
+    font-size: 0.88rem;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: toastFadeIn 0.25s ease-out;
+}
+
+.toast.toast-success { background: #15803d; }
+.toast.toast-error { background: #b91c1c; }
+.toast.toast-warning { background: #b45309; }
+
+@keyframes toastFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ==========================================================================
+   10. Card-based Mobile Layout (Rule 5: Không cuộn ngang trên màn hình <= 992px)
+   ========================================================================== */
+@media (max-width: 1024px) {
+    .inline-dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+}
+
+@media (max-width: 992px) {
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .tasks-toolbar-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-select {
+        width: 100%;
+    }
+
+    .table-tasks-container {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        overflow-x: visible;
+    }
+
+    .table-tasks, 
+    .table-tasks tbody, 
+    .table-tasks tr.expandable-row, 
+    .table-tasks td {
+        display: block;
+        width: 100%;
+    }
+
+    .table-tasks thead {
+        display: none;
+    }
+
+    .table-tasks tbody tr.expandable-row {
+        background: #fff;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-md);
+        margin-bottom: 10px;
+        padding: 10px 14px;
+        box-shadow: var(--box-shadow-sm);
+    }
+
+    .table-tasks tbody tr.expandable-row.row-expanded {
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        margin-bottom: 0;
+    }
+
+    .table-tasks td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px dashed var(--border-color);
+        text-align: right;
+    }
+
+    .table-tasks td:last-child {
+        border-bottom: none;
+        padding-top: 10px;
+        justify-content: flex-end;
+    }
+
+    .table-tasks td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        font-size: 0.82rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        margin-right: 12px;
+        text-align: left;
+    }
+
+    .col-expand {
+        display: none !important;
+    }
+
+    .table-tasks tbody tr.inline-detail-row {
+        display: block;
+        width: 100%;
+        margin-bottom: 14px;
+        border: 1px solid var(--border-color);
+        border-top: none;
+        border-bottom-left-radius: var(--border-radius-md);
+        border-bottom-right-radius: var(--border-radius-md);
+    }
+
+    .inline-workspace-wrapper {
+        padding: 14px 12px;
+    }
+
+    .health-bars-box {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .inline-dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+}

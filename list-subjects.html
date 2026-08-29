@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Môn học - Student Care V2</title>
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/subjects.css">
+    <!-- SheetJS (xlsx) cho tính năng Import/Export Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav id="sidebar" class="sidebar"></nav>
+        
+        <main class="main-content">
+            <!-- Header -->
+            <header id="header" class="header"></header>
+            
+            <div class="content-body">
+                <div class="card card-full-width">
+                    <div class="card-header-flex">
+                        <div>
+                            <h2 class="card-title">📖 Quản lý Danh mục Môn học</h2>
+                            <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px;">
+                                Cấu hình số buổi học, ngưỡng vắng tối đa và môn điều kiện tiên quyết cho toàn trường.
+                            </p>
+                        </div>
+                        <div class="toolbar" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                            <button id="btnScanMissing" class="btn btn-secondary btn-scan-missing" title="Quét các môn có trong điểm danh nhưng chưa có trong danh mục">
+                                🔍 Quét Môn Chưa Có (<span id="txtCurrentSemester">...</span>)
+                            </button>
+                            <button id="btnDownloadTemplate" class="btn btn-secondary">📄 Tải Mẫu Excel</button>
+                            <label class="btn btn-secondary" style="cursor: pointer; margin: 0;">
+                                📥 Nhập từ Excel
+                                <input type="file" id="fileImportExcel" accept=".xlsx, .xls" style="display: none;">
+                            </label>
+                            <button id="btnExportExcel" class="btn btn-secondary">📤 Xuất Excel</button>
+                            <button id="btnSaveAll" class="btn btn-primary" disabled>💾 Lưu Tất Cả Các Dòng Bị Đổi</button>
+                        </div>
+                    </div>
+
+                    <!-- Ô Tìm kiếm nhanh -->
+                    <div style="margin-top: 14px; margin-bottom: 8px; display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="inpSearchSubject" class="input-search-subject" placeholder="🔍 Tìm kiếm theo Mã Môn hoặc Tên Môn Học...">
+                        <span id="subjectCountBadge" class="badge-count">Đang tải...</span>
+                    </div>
+                    
+                    <div class="table-responsive table-subjects-container">
+                        <table class="table table-subjects">
+                            <thead>
+                                <tr>
+                                    <th class="col-code">Mã Môn (Doc ID)</th>
+                                    <th class="col-name">Tên Môn Học</th>
+                                    <th class="col-major">Chuyên Ngành</th>
+                                    <th class="col-mode">Hình Thức</th>
+                                    <th class="col-sessions text-center">Tổng Buổi</th>
+                                    <th class="col-absences text-center">Vắng Tối Đa</th>
+                                    <th class="col-prereq text-center" title="Môn Tiên Quyết (Điều kiện mở môn)">⚡ Tiên Quyết</th>
+                                    <th class="col-action text-center">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="subjectsTableBody">
+                                <!-- Hàng 1: Input thêm mới trực tiếp -->
+                                <tr class="row-add">
+                                    <td data-label="Mã Môn">
+                                        <input type="text" id="new_docId" placeholder="VD: GAM108 (GAM108)">
+                                    </td>
+                                    <td data-label="Tên Môn Học">
+                                        <input type="text" id="new_course_name" placeholder="VD: Dự án mẫu (Lập trình Game)">
+                                    </td>
+                                    <td data-label="Chuyên Ngành">
+                                        <input type="text" id="new_major" placeholder="VD: LTGame, LTWeb">
+                                    </td>
+                                    <td data-label="Hình Thức">
+                                        <select id="new_learning_mode" title="Hình thức học">
+                                            <option value="Traditional">Traditional</option>
+                                            <option value="Blended">Blended</option>
+                                            <option value="Online">Online</option>
+                                        </select>
+                                    </td>
+                                    <td data-label="Tổng Buổi" class="text-center">
+                                        <input type="number" id="new_total_sessions" placeholder="12" min="1" max="100" style="text-align: center;">
+                                    </td>
+                                    <td data-label="Vắng Tối Đa" class="text-center">
+                                        <input type="number" id="new_max_absences" placeholder="2" min="0" max="20" style="text-align: center;">
+                                    </td>
+                                    <td data-label="⚡ Tiên Quyết" class="text-center">
+                                        <input type="checkbox" id="new_is_prerequisite" title="Đánh dấu là môn tiên quyết">
+                                    </td>
+                                    <td data-label="Thao tác" class="text-center">
+                                        <button id="btnAddSubject" class="btn-icon btn-add" title="Thêm Môn học mới">+</button>
+                                    </td>
+                                </tr>
+                                <!-- Dynamic rows will be rendered here -->
+                                <tr id="loadingRow">
+                                    <td colspan="8" class="text-center" style="padding: 30px;">
+                                        <div class="loader" style="display: inline-block; width: 32px; height: 32px; border-top-color: var(--primary-color);"></div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="load-more-container text-center" style="margin-top: 15px; display: none;" id="loadMoreContainer">
+                        <button id="btnLoadMore" class="btn btn-secondary">Tải thêm môn học</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Kết Quả Quét Môn Chưa Có Trong Kỳ -->
+    <div id="modalScanMissing" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 650px;">
+            <h3 class="modal-title" style="color: #6f42c1; display: flex; align-items: center; gap: 8px;">
+                <span>🔍 Phát Hiện Môn Mới Chưa Có Trong Danh Mục</span>
+            </h3>
+            <p style="font-size: 0.88rem; color: var(--text-secondary); margin: 6px 0 16px 0;">
+                Học kỳ: <strong id="modalSemester" style="color: var(--text-primary);">...</strong>. Dưới đây là các môn học đang có sinh viên theo học nhưng chưa được cấu hình trong bảng <code>Subjects</code>:
+            </p>
+
+            <div class="missing-subjects-list" id="missingSubjectsList" style="max-height: 280px; overflow-y: auto; margin-bottom: 20px; border: 1px solid var(--border-color); border-radius: 6px;">
+                <!-- Rendered dynamically -->
+            </div>
+
+            <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button id="btnCloseModalScan" class="btn btn-secondary">Đóng</button>
+                <button id="btnAddAllMissing" class="btn btn-primary" style="background-color: #6f42c1;">⚡ Thêm Nhanh Tất Cả Vào Danh Mục</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Modules -->
+    <script type="module" src="js/layout.js"></script>
+    <script type="module" src="js/subjects.js"></script>
+</body>
+</html>

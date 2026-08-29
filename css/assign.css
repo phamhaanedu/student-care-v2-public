@@ -1,0 +1,391 @@
+/* assign.css - Styling cho Chức năng Phân Công Chăm Sóc Sinh Viên */
+
+/* Header Controls */
+.assign-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.assign-page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.filter-group-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.filter-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.filter-select {
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-size: 0.9rem;
+    background-color: #fff;
+    color: var(--text-primary);
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.filter-select:focus {
+    border-color: var(--primary-color);
+}
+
+/* Toolbar Box */
+.assign-toolbar-card {
+    background: #fff;
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border-color);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    box-shadow: var(--box-shadow-sm);
+}
+
+.toolbar-label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.toolbar-actions-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.input-teacher-list {
+    flex: 1;
+    padding: 9px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    outline: none;
+    transition: all 0.2s;
+}
+
+.input-teacher-list:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.15);
+}
+
+.btn-auto-assign {
+    background-color: #1a73e8;
+    color: #fff;
+    white-space: nowrap;
+    padding: 9px 18px;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.btn-auto-assign:hover {
+    background-color: #1557b0;
+    box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3);
+}
+
+.btn-save-assign {
+    background-color: #198754;
+    color: #fff;
+    white-space: nowrap;
+    padding: 9px 18px;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.btn-save-assign:hover {
+    background-color: #157347;
+    box-shadow: 0 2px 6px rgba(25, 135, 84, 0.3);
+}
+
+.btn-save-assign:disabled,
+.btn-auto-assign:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Alert Summary */
+.alert-summary {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    border: 1px solid #badbcc;
+    border-radius: var(--border-radius-sm);
+    padding: 10px 16px;
+    font-size: 0.92rem;
+    font-weight: 500;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Data Table */
+.table-assign-container {
+    background: #fff;
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--box-shadow-sm);
+    overflow-x: auto;
+}
+
+.table-assign {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.table-assign th {
+    background-color: #fafbfe;
+    color: var(--text-secondary);
+    font-weight: 600;
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 2px solid var(--border-color);
+    white-space: nowrap;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+}
+
+.table-assign td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+    color: var(--text-primary);
+}
+
+.table-assign tbody tr:hover {
+    background-color: #f8f9fc;
+}
+
+/* Column specific widths and alignments */
+.col-student-id {
+    font-weight: 700;
+    color: #1e1e2d;
+    white-space: nowrap;
+}
+
+.col-name {
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.col-course {
+    color: #495057;
+    white-space: nowrap;
+}
+
+.col-class {
+    color: #6c757d;
+    white-space: nowrap;
+}
+
+.col-absence {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.col-caregiver {
+    white-space: nowrap;
+}
+
+.col-care-time {
+    color: #6c757d;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.col-care-count {
+    text-align: center;
+    font-weight: 600;
+}
+
+.col-care-history {
+    color: #6c757d;
+    font-size: 0.85rem;
+}
+
+/* Badge absence */
+.badge-absence {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.badge-absence-danger {
+    background-color: #dc3545;
+}
+
+.badge-absence-warning {
+    background-color: #fd7e14;
+}
+
+.badge-absence-safe {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+/* Input caregiver */
+.inp-caregiver {
+    width: 110px;
+    padding: 6px 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.88rem;
+    color: var(--text-primary);
+    outline: none;
+    transition: all 0.2s;
+}
+
+.inp-caregiver:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(111, 66, 193, 0.15);
+}
+
+.row-dirty {
+    background-color: #fff8e1 !important;
+}
+
+.row-dirty .inp-caregiver {
+    border-color: #ffc107;
+    background-color: #fffdf5;
+    font-weight: 600;
+}
+
+/* Loader */
+.loader-container {
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.loader-spinner {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.empty-state {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   Card-based Mobile Layout (Rule 5: Không cuộn ngang trên màn hình <= 992px)
+   ========================================================================== */
+@media (max-width: 992px) {
+    .assign-header-flex {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .filter-group-container {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .toolbar-actions-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .btn-auto-assign,
+    .btn-save-assign {
+        width: 100%;
+    }
+
+    .table-assign-container {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        overflow-x: visible;
+    }
+
+    .table-assign, 
+    .table-assign tbody, 
+    .table-assign tr, 
+    .table-assign td {
+        display: block;
+        width: 100%;
+    }
+
+    .table-assign thead {
+        display: none; /* Ẩn table header trên mobile */
+    }
+
+    .table-assign tbody tr {
+        background: #fff;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-md);
+        margin-bottom: 12px;
+        padding: 8px 12px;
+        box-shadow: var(--box-shadow-sm);
+    }
+
+    .table-assign td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 6px;
+        border-bottom: 1px dashed var(--border-color);
+        text-align: right;
+    }
+
+    .table-assign td:last-child {
+        border-bottom: none;
+    }
+
+    .table-assign td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        margin-right: 12px;
+        text-align: left;
+    }
+
+    .inp-caregiver {
+        width: 140px;
+    }
+}

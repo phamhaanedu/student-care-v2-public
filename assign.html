@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phân Công Chăm Sóc Sinh Viên - Student Care V2</title>
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/assign.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar tự động render theo RBAC qua layout.js -->
+        <nav id="sidebar" class="sidebar"></nav>
+        
+        <main class="main-content">
+            <!-- Header tự động render qua layout.js -->
+            <header id="header" class="header"></header>
+            
+            <div class="content-body">
+                <!-- Top Header & Bộ lọc -->
+                <div class="assign-header-flex">
+                    <h1 class="assign-page-title">Phân Công Chăm Sóc Sinh Viên</h1>
+                    <div class="filter-group-container">
+                        <div class="filter-item">
+                            <label for="selectSemester">Kỳ học:</label>
+                            <select id="selectSemester" class="filter-select">
+                                <option value="">Đang tải...</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label for="selectAbsenceFilter">Mức độ vắng:</label>
+                            <select id="selectAbsenceFilter" class="filter-select">
+                                <option value="all_risk">Tất cả nguy hiểm</option>
+                                <option value="1">Vắng 1 buổi</option>
+                                <option value="2">Vắng 2 buổi</option>
+                                <option value="3">Vắng 3 buổi</option>
+                                <option value="gte4">Vắng &gt;= 4 buổi</option>
+                                <option value="all">Tất cả</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hộp thao tác phân công -->
+                <div class="assign-toolbar-card">
+                    <label for="inpTeacherList" class="toolbar-label">Nhập danh sách Mã GV chăm sóc (cách nhau dấu phẩy):</label>
+                    <div class="toolbar-actions-row">
+                        <input type="text" id="inpTeacherList" class="input-teacher-list" placeholder="VD: GV01, GV02, GV03">
+                        <button id="btnAutoAssign" class="btn-auto-assign">Tự động chia đều</button>
+                        <button id="btnSaveAssign" class="btn-save-assign">Lưu phân công</button>
+                    </div>
+                </div>
+
+                <!-- Banner thông báo số lượng bản ghi -->
+                <div id="summaryBanner" class="alert-summary" style="display: none;">
+                    <span>Đã tải <strong id="recordCount">0</strong> bản ghi cần chăm sóc.</span>
+                </div>
+
+                <!-- Bảng Danh Sách Phân Công -->
+                <div class="table-assign-container">
+                    <table class="table-assign">
+                        <thead>
+                            <tr>
+                                <th class="col-student-id">Mã SV</th>
+                                <th class="col-name">Họ Tên</th>
+                                <th class="col-course">Mã Môn</th>
+                                <th class="col-class">Lớp</th>
+                                <th class="col-absence">Vắng</th>
+                                <th class="col-caregiver">Mã GV Chăm Sóc</th>
+                                <th class="col-care-time">Thời gian CS</th>
+                                <th class="col-care-count">Số lần CS</th>
+                                <th class="col-care-history">Lịch sử CS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assignTableBody">
+                            <tr>
+                                <td colspan="9" class="loader-container">
+                                    <div class="loader-spinner"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="js/layout.js"></script>
+    <script type="module" src="js/assign.js"></script>
+</body>
+</html>
