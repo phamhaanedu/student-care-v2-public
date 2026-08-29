@@ -8,6 +8,7 @@ import { checkAuth } from './auth.js';
 // ==========================================================================
 let currentSession = null;
 let globalConfig = { available_semesters: [], current_semester: '' };
+let currentSemester = '';
 let selectedSemester = '';
 let rawRecords = []; // Toàn bộ AcademicRecords của kỳ hiện tại
 const semesterDataCache = new Map(); // Session Cache: Map<semester, records[]>
@@ -215,6 +216,15 @@ async function fetchSemesterData(semester, forceRefresh = false) {
     } catch (error) {
         console.error(`Lỗi khi tải dữ liệu kỳ ${semester}:`, error);
         showToast("Lỗi khi tải dữ liệu báo cáo: " + error.message, "error");
+        
+        if ($('tableBodyTeachers')) {
+            $('tableBodyTeachers').innerHTML = `<tr><td colspan="8" class="text-center text-danger" style="padding: 30px;">
+                ⚠️ <strong>Không thể tải dữ liệu báo cáo:</strong> ${error.message}<br>
+                <small style="color: var(--text-secondary); margin-top: 8px; display: inline-block;">
+                    Nếu gặp lỗi phân quyền (insufficient permissions), vui lòng cập nhật <strong>Firestore Rules</strong> trên Firebase Cloud Console để cấp quyền xem cho vai trò Admin.
+                </small>
+            </td></tr>`;
+        }
     } finally {
         setLoadingState(false);
     }
@@ -783,13 +793,14 @@ function handleExportExcelReport() {
         // SHEET 2: CHI TIẾT SINH VIÊN
         // ----------------------------------------------------
         const sheet2Data = [
-            ["Mã Sinh Viên", "Họ Tên", "Lớp", "Môn Học", "Số Buổi Vắng", "GV Đứng Lớp", "GV Chăm Sóc", "Tình Trạng Liên Lạc", "Kết Quả Chăm Sóc", "Lần CS Cuối", "Ghi Chú"]
+            ["Mã Sinh Viên", "Họ Tên", "Số Điện Thoại", "Lớp", "Môn Học", "Số Buổi Vắng", "GV Đứng Lớp", "GV Chăm Sóc", "Tình Trạng Liên Lạc", "Kết Quả Chăm Sóc", "Lần CS Cuối", "Ghi Chú"]
         ];
 
         rawRecords.forEach(r => {
             sheet2Data.push([
                 r.student_id || "",
                 r.name || "",
+                r.phone || "",
                 r.class_name || r.class_id || "",
                 r.course_code || "",
                 r.total_absences || 0,

@@ -14,6 +14,7 @@ const expandedRowIds = new Set(); // Tập hợp các docId đang mở rộng ac
 const studentProfileCache = new Map(); // Cache thông tin sinh viên Students/{studentId}
 const careLogsCache = new Map(); // Cache lịch sử chăm sóc CareLogs của từng sinh viên
 const subjectsCache = new Map(); // Cache danh mục Subjects để tra cứu môn tiên quyết
+const teachersCache = new Map(); // Cache danh mục Teachers để tra cứu tên GV
 
 // DOM Elements
 const kpiTotal = document.getElementById('kpiTotal');
@@ -38,10 +39,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentSession = await checkAuth();
         if (!currentSession) return;
 
-        // 2. Lấy cấu hình kỳ học hiện tại & Danh mục Môn học
+        // 2. Lấy cấu hình kỳ học hiện tại, Danh mục Môn học & Giảng viên
         await Promise.all([
             loadCurrentSemester(),
-            loadSubjectsCache()
+            loadSubjectsCache(),
+            loadTeachersCache()
         ]);
 
         // 3. Tải danh sách nhiệm vụ chăm sóc
@@ -49,11 +51,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 4. Đăng ký sự kiện tìm kiếm & lọc
         inpSearch.addEventListener('input', applyFilters);
-        if (selectScopeFilter) selectScopeFilter.addEventListener('change', applyFilters);
+        if (selectScopeFilter) selectScopeFilter.addEventListener('change', onScopeOrTeacherChange);
+        if (selectTeacherFilter) selectTeacherFilter.addEventListener('change', onScopeOrTeacherChange);
         if (selectClassFilter) selectClassFilter.addEventListener('change', applyFilters);
         selectContactStatusFilter.addEventListener('change', applyFilters);
         selectCareStatusFilter.addEventListener('change', applyFilters);
-        if (selectTeacherFilter) selectTeacherFilter.addEventListener('change', applyFilters);
 
         // Sự kiện đổi học kỳ xem dữ liệu
         if (selectSemesterFilter) {
@@ -153,6 +155,21 @@ async function loadSubjectsCache() {
         console.log(`Đã tải cache ${subjectsCache.size} môn học.`);
     } catch (e) {
         console.warn("Lưu ý khi tải cache Subjects:", e);
+    }
+}
+
+/**
+ * Tải danh mục Giảng viên vào cache để hiển thị tên đầy đủ
+ */
+async function loadTeachersCache() {
+    try {
+        const teachersSnap = await getDocs(collection(db, "Teachers"));
+        teachersSnap.forEach(d => {
+            teachersCache.set(d.id, d.data());
+        });
+        console.log(`Đã tải cache ${teachersCache.size} Giảng viên.`);
+    } catch (e) {
+        console.warn("Lưu ý khi tải cache Teachers:", e);
     }
 }
 
@@ -273,15 +290,22 @@ async function loadTasks() {
 
         allTasks = Array.from(tasksMap.values());
 
-        // Đổ danh sách GV vào bộ lọc (Admin)
+        // Đổ danh sách GV vào bộ lọc (Admin / Super Admin)
         if (!isTeacher && selectTeacherFilter) {
-            selectTeacherFilter.innerHTML = '<option value="all">Tất cả Giảng viên</option>';
-            Array.from(teacherSet).sort().forEach(tId => {
-                const opt = document.createElement('option');
-                opt.value = tId;
-                opt.textContent = `GV: ${tId}`;
-                selectTeacherFilter.appendChild(opt);
+            let teacherOptionsHtml = '<option value="all">Tất cả Giảng viên CS</option>';
+            teacherOptionsHtml += '<option value="unassigned">⚠️ Chưa phân công</option>';
+
+            // Gom tất cả GV từ teachersCache và từ caregiver_id / teacher_id thực tế
+            const allTeacherIds = new Set(teacherSet);
+            teachersCache.forEach((info, tId) => allTeacherIds.add(tId));
+
+            Array.from(allTeacherIds).sort().forEach(tId => {
+                const info = teachersCache.get(tId) || {};
+                const displayName = info.full_name ? `${tId} - ${info.full_name}` : `GV: ${tId}`;
+                teacherOptionsHtml += `<option value="${tId}">👨‍🏫 ${displayName}</option>`;
             });
+
+            selectTeacherFilter.innerHTML = teacherOptionsHtml;
         }
 
         // Sắp xếp mặc định: THEO MÃ SỐ SINH VIÊN (A -> Z)
@@ -295,14 +319,49 @@ async function loadTasks() {
 
     } catch (error) {
         console.error("Lỗi khi tải danh sách AcademicRecords:", error);
+        const isTeacher = currentSession.role === 'Teacher';
+        let tipMsg = '';
+        if (error.message && error.message.includes('permission')) {
+            tipMsg = `<div style="margin-top: 10px; font-size: 0.82rem; color: var(--text-secondary);">
+                💡 <em>Gợi ý:</em> Tài khoản của bạn có thể chưa được cấu hình quyền hoặc <strong>Firestore Security Rules</strong> trên Firebase Console chưa được Publish bản cập nhật cấp quyền.
+            </div>`;
+        }
         tasksTableBody.innerHTML = `
             <tr>
-                <td colspan="11" class="text-center text-danger" style="padding: 30px;">
-                    ❌ Không thể tải dữ liệu: ${error.message}
+                <td colspan="${isTeacher ? 10 : 11}" class="text-center text-danger" style="padding: 30px;">
+                    ❌ <strong>Không thể tải danh sách sinh viên:</strong> ${error.message}
+                    ${tipMsg}
                 </td>
             </tr>
         `;
     }
+}
+
+/**
+ * Khi thay đổi Phạm vi (Scope) hoặc Giảng viên CS -> Tự động cập nhật danh mục Lớp - Môn học
+ */
+function onScopeOrTeacherChange() {
+    const scopeVal = selectScopeFilter ? selectScopeFilter.value : 'all';
+    const teacherVal = selectTeacherFilter ? selectTeacherFilter.value : 'all';
+
+    // Lọc tập dữ liệu theo Scope và Giảng viên
+    const scopedTasks = allTasks.filter(item => {
+        let matchScope = true;
+        if (scopeVal === 'assigned') matchScope = item.is_assigned === true;
+        else if (scopeVal === 'teaching') matchScope = item.is_teaching === true;
+
+        let matchTeacher = true;
+        if (teacherVal === 'unassigned') matchTeacher = !item.caregiver_id;
+        else if (teacherVal !== 'all') matchTeacher = (item.caregiver_id === teacherVal);
+
+        return matchScope && matchTeacher;
+    });
+
+    // Cập nhật lại dropdown Lớp - Môn học theo đúng tập dữ liệu đã lọc
+    populateClassFilter(scopedTasks);
+
+    // Áp dụng bộ lọc và render lại
+    applyFilters();
 }
 
 /**
@@ -340,13 +399,20 @@ function populateClassFilter(tasks) {
         return a[1].class_name.localeCompare(b[1].class_name);
     });
 
+    let hasSelected = false;
     sortedClasses.forEach(([key, info]) => {
         const courseDisplay = info.course_name ? `${info.course_code} - ${info.course_name}` : info.course_code;
-        const selected = (key === currentVal) ? 'selected' : '';
-        optionsHtml += `<option value="${key}" ${selected}>🏫 ${info.class_name} | ${courseDisplay} (${info.count} SV)</option>`;
+        const isSelected = (key === currentVal);
+        if (isSelected) hasSelected = true;
+        optionsHtml += `<option value="${key}" ${isSelected ? 'selected' : ''}>🏫 ${info.class_name} | ${courseDisplay} (${info.count} SV)</option>`;
     });
 
     selectClassFilter.innerHTML = optionsHtml;
+
+    // Nếu lớp đang chọn trước đó không còn trong tập lớp mới -> Đưa về 'all'
+    if (!hasSelected && currentVal !== 'all') {
+        selectClassFilter.value = 'all';
+    }
 }
 
 /**
@@ -398,7 +464,12 @@ function applyFilters() {
         }
 
         // 6. Lọc Giảng viên chăm sóc (Admin)
-        const matchTeacher = (teacherVal === 'all') || (item.caregiver_id === teacherVal);
+        let matchTeacher = true;
+        if (teacherVal === 'unassigned') {
+            matchTeacher = !item.caregiver_id;
+        } else if (teacherVal !== 'all') {
+            matchTeacher = (item.caregiver_id === teacherVal);
+        }
 
         return matchSearch && matchScope && matchClass && matchContact && matchCare && matchTeacher;
     });
@@ -439,10 +510,17 @@ function renderTasksTable(tasks) {
     const isTeacher = currentSession.role === 'Teacher';
 
     if (tasks.length === 0) {
+        let emptyMsg = '🔍 Không tìm thấy ca sinh viên nào phù hợp với bộ lọc.';
+        if (!allTasks || allTasks.length === 0) {
+            emptyMsg = isTeacher 
+                ? '📋 Bạn chưa có ca sinh viên nào được phân công chăm sóc hoặc lớp đứng lớp trong học kỳ này.'
+                : '📋 Chưa có ca sinh viên nào phát sinh trong học kỳ này.';
+        }
+
         tasksTableBody.innerHTML = `
             <tr>
-                <td colspan="${isTeacher ? 10 : 11}" class="text-center" style="padding: 40px; color: var(--text-secondary);">
-                    🔍 Không tìm thấy ca sinh viên nào phù hợp với bộ lọc.
+                <td colspan="${isTeacher ? 10 : 11}" class="text-center" style="padding: 40px; color: var(--text-secondary); font-size: 0.9rem;">
+                    ${emptyMsg}
                 </td>
             </tr>
         `;
@@ -620,7 +698,20 @@ async function renderInlineWorkspace(docId, studentId) {
         }
 
         // 3. Chuẩn bị Dữ liệu
-        const sdt = record.phone || studentData.phone || 'Chưa có SĐT';
+        // Danh sách SĐT của SV (Mảng chuỗi) - Số thêm sau cùng luôn là số ưu tiên hiển thị
+        let phoneNumbers = [];
+        if (Array.isArray(studentData.phone_numbers) && studentData.phone_numbers.length > 0) {
+            phoneNumbers = [...studentData.phone_numbers];
+        } else if (studentData.phone) {
+            phoneNumbers = [studentData.phone];
+        } else if (record.phone) {
+            phoneNumbers = [record.phone];
+        }
+
+        const primaryPhone = phoneNumbers.length > 0 ? phoneNumbers[phoneNumbers.length - 1] : 'Chưa có SĐT';
+        const oldPhones = phoneNumbers.length > 1 ? phoneNumbers.slice(0, -1) : [];
+
+        const sdt = primaryPhone;
         const email = record.email || studentData.email || 'Chưa có email';
         const name = record.name || studentData.name || 'Sinh viên';
         const absences = record.total_absences || 0;
@@ -657,8 +748,16 @@ async function renderInlineWorkspace(docId, studentId) {
                             <span class="student-id-tag">${studentId}</span>
                         </h3>
                         <div class="student-contact-row">
-                            <span class="phone-highlight-block">📞 <a href="tel:${sdt}" class="phone-link-large" onclick="event.stopPropagation();">${sdt}</a> 
+                            <span class="phone-highlight-block" id="phoneBlock-${docId}">
+                                📞 <a href="tel:${sdt}" class="phone-link-large" onclick="event.stopPropagation();">${sdt}</a> 
                                 ${sdt !== 'Chưa có SĐT' ? `<button type="button" class="btn-copy-phone-large" onclick="navigator.clipboard.writeText('${sdt}'); showToast('Đã sao chép SĐT ${sdt}', 'success'); event.stopPropagation();">Sao chép</button>` : ''}
+                                ${oldPhones.length > 0 ? `<span class="old-phones-text" title="Các số cũ: ${oldPhones.join(', ')}">(Số cũ: ${oldPhones.join(', ')})</span>` : ''}
+                                <button type="button" class="btn-add-phone-trigger" id="btnShowAddPhone-${docId}" title="Bổ sung số điện thoại mới cho sinh viên" onclick="event.stopPropagation();">➕ Thêm SĐT</button>
+                                <span class="inline-add-phone-box" id="boxAddPhone-${docId}" style="display: none;" onclick="event.stopPropagation();">
+                                    <input type="tel" class="inline-phone-input" id="inpNewPhone-${docId}" placeholder="Nhập SĐT mới..." maxlength="15">
+                                    <button type="button" class="btn-phone-save" id="btnSavePhone-${docId}">Lưu</button>
+                                    <button type="button" class="btn-phone-cancel" id="btnCancelPhone-${docId}">Hủy</button>
+                                </span>
                             </span>
                             <span>✉️ ${email}</span>
                             <span>🏫 Lớp: <strong>${record.class_name || record.class_id || '-'}</strong> (Môn: <strong>${courseDisplay || '-'}</strong>)</span>
@@ -837,10 +936,135 @@ async function renderInlineWorkspace(docId, studentId) {
             });
         }
 
+        // 7. Gắn sự kiện Bổ sung SĐT Mới (Ưu tiên số thêm sau cùng)
+        const btnShowAddPhone = document.getElementById(`btnShowAddPhone-${docId}`);
+        const boxAddPhone = document.getElementById(`boxAddPhone-${docId}`);
+        const inpNewPhone = document.getElementById(`inpNewPhone-${docId}`);
+        const btnSavePhone = document.getElementById(`btnSavePhone-${docId}`);
+        const btnCancelPhone = document.getElementById(`btnCancelPhone-${docId}`);
+
+        if (btnShowAddPhone && boxAddPhone && inpNewPhone && btnSavePhone && btnCancelPhone) {
+            btnShowAddPhone.addEventListener('click', (e) => {
+                e.stopPropagation();
+                btnShowAddPhone.style.display = 'none';
+                boxAddPhone.style.display = 'inline-flex';
+                inpNewPhone.value = '';
+                inpNewPhone.focus();
+            });
+
+            btnCancelPhone.addEventListener('click', (e) => {
+                e.stopPropagation();
+                boxAddPhone.style.display = 'none';
+                btnShowAddPhone.style.display = 'inline-flex';
+            });
+
+            inpNewPhone.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    btnSavePhone.click();
+                } else if (e.key === 'Escape') {
+                    btnCancelPhone.click();
+                }
+            });
+
+            btnSavePhone.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const newPhoneVal = inpNewPhone.value.trim();
+                if (!newPhoneVal) {
+                    showToast("Vui lòng nhập số điện thoại mới.", "warning");
+                    inpNewPhone.focus();
+                    return;
+                }
+
+                // Kiểm tra hợp lệ tối thiểu 8-15 ký tự
+                const cleanPhone = newPhoneVal.replace(/[\s.-]/g, '');
+                if (cleanPhone.length < 8 || cleanPhone.length > 15) {
+                    showToast("Số điện thoại không hợp lệ (từ 8 đến 15 chữ số).", "warning");
+                    inpNewPhone.focus();
+                    return;
+                }
+
+                try {
+                    btnSavePhone.disabled = true;
+                    btnSavePhone.textContent = '...';
+                    await handleAddStudentPhoneNumber(studentId, docId, newPhoneVal);
+                } catch (err) {
+                    console.error("Lỗi khi thêm SĐT:", err);
+                    showToast("Lỗi khi cập nhật SĐT: " + err.message, "error");
+                    btnSavePhone.disabled = false;
+                    btnSavePhone.textContent = 'Lưu';
+                }
+            });
+        }
+
     } catch (error) {
         console.error("Lỗi khi render workspace inline:", error);
         wsContainer.innerHTML = `<div class="text-danger" style="padding: 10px;">❌ Lỗi khi tải hồ sơ: ${error.message}</div>`;
     }
+}
+
+/**
+ * Xử lý Bổ sung SĐT Mới cho Sinh viên (Ưu tiên số thêm sau cùng)
+ */
+async function handleAddStudentPhoneNumber(studentId, docId, newPhone) {
+    // 1. Lấy dữ liệu sinh viên hiện tại
+    let studentData = studentProfileCache.get(studentId) || {};
+    let phoneNumbers = [];
+    if (Array.isArray(studentData.phone_numbers) && studentData.phone_numbers.length > 0) {
+        phoneNumbers = [...studentData.phone_numbers];
+    } else if (studentData.phone) {
+        phoneNumbers = [studentData.phone];
+    }
+
+    // Đẩy số mới vào cuối mảng (số thêm sau cùng)
+    if (phoneNumbers[phoneNumbers.length - 1] !== newPhone) {
+        phoneNumbers.push(newPhone);
+    }
+
+    const nowIso = new Date().toISOString();
+
+    // 2. Cập nhật bảng Students
+    const studentRef = doc(db, "Students", studentId);
+    await updateDoc(studentRef, {
+        phone: newPhone,
+        phone_numbers: phoneNumbers,
+        updated_at: nowIso
+    });
+
+    // 3. Cập nhật cache Students
+    studentData.phone = newPhone;
+    studentData.phone_numbers = phoneNumbers;
+    studentProfileCache.set(studentId, studentData);
+
+    // 4. Đồng bộ cập nhật trường phone trên AcademicRecords hiện tại
+    if (docId) {
+        try {
+            const recordRef = doc(db, "AcademicRecords", docId);
+            await updateDoc(recordRef, {
+                phone: newPhone,
+                updated_at: nowIso
+            });
+        } catch (e) {
+            console.warn("Lưu ý khi đồng bộ AcademicRecords.phone:", e);
+        }
+    }
+
+    // 5. Cập nhật state allTasks và filteredTasks trong RAM
+    allTasks.forEach(t => {
+        if (t.student_id === studentId) {
+            t.phone = newPhone;
+        }
+    });
+    filteredTasks.forEach(t => {
+        if (t.student_id === studentId) {
+            t.phone = newPhone;
+        }
+    });
+
+    showToast(`Đã cập nhật SĐT mới ${newPhone} (ưu tiên hiển thị).`, "success");
+
+    // 6. Tải lại và render ngay Không Gian Làm Việc 360° Inline
+    await renderInlineWorkspace(docId, studentId);
 }
 
 /**

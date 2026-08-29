@@ -428,6 +428,86 @@
     color: #3730a3;
 }
 
+.btn-add-phone-trigger {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #059669;
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.btn-add-phone-trigger:hover {
+    background: #d1fae5;
+    color: #047857;
+}
+
+.old-phones-text {
+    font-size: 0.78rem;
+    color: #64748b;
+    margin-left: 6px;
+}
+
+.inline-add-phone-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 2px 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.inline-phone-input {
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.85rem;
+    width: 130px;
+    outline: none;
+}
+
+.inline-phone-input:focus {
+    border-color: #6366f1;
+}
+
+.btn-phone-save {
+    background: #10b981;
+    color: #fff;
+    border: none;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-phone-save:hover {
+    background: #059669;
+}
+
+.btn-phone-cancel {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.btn-phone-cancel:hover {
+    background: #e2e8f0;
+    color: #334155;
+}
+
 .contact-link {
     color: #0d6efd;
     text-decoration: none;
