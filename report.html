@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo Cáo & Đánh Giá Chăm Sóc - Student Care V2</title>
+    <!-- Core Design System & Components -->
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/report.css">
+    <!-- SheetJS (xlsx) cho tính năng Xuất Báo Cáo Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav id="sidebar" class="sidebar"></nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header -->
+            <header id="header" class="header"></header>
+
+            <div class="content-body">
+                <!-- Toolbar & Bộ lọc Học kỳ -->
+                <div class="report-toolbar-card">
+                    <div class="toolbar-left">
+                        <div class="semester-selector-group">
+                            <label for="selectSemester" class="toolbar-label">Học Kỳ:</label>
+                            <select id="selectSemester" class="filter-select select-semester">
+                                <option value="">Đang tải kỳ học...</option>
+                            </select>
+                        </div>
+                        <button id="btnRefreshData" class="btn btn-secondary btn-icon-text" title="Tải lại dữ liệu mới nhất từ máy chủ">
+                            <span>🔄</span> Làm Mới
+                        </button>
+                    </div>
+
+                    <div class="toolbar-right">
+                        <button id="btnExportExcel" class="btn btn-primary btn-icon-text">
+                            <span>📥</span> Xuất Báo Cáo Excel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Executive Summary KPI Cards (4 Thẻ Chỉ Số Tổng Quan) -->
+                <div class="report-kpi-grid">
+                    <div class="report-kpi-card card-total">
+                        <div class="kpi-icon-wrap">📋</div>
+                        <div class="kpi-content">
+                            <div class="kpi-value" id="kpiTotalTasks">-</div>
+                            <div class="kpi-title">Tổng Ca Sinh Viên</div>
+                            <div class="kpi-subtitle" id="kpiTotalSub">Phát sinh trong kỳ</div>
+                        </div>
+                    </div>
+
+                    <div class="report-kpi-card card-completed">
+                        <div class="kpi-icon-wrap">✅</div>
+                        <div class="kpi-content">
+                            <div class="kpi-value" id="kpiCompletedRate">-%</div>
+                            <div class="kpi-title">Tiến Độ Chăm Sóc</div>
+                            <div class="kpi-subtitle" id="kpiCompletedSub">- / - ca hoàn thành</div>
+                        </div>
+                    </div>
+
+                    <div class="report-kpi-card card-contacted">
+                        <div class="kpi-icon-wrap">📞</div>
+                        <div class="kpi-content">
+                            <div class="kpi-value" id="kpiContactRate">-%</div>
+                            <div class="kpi-title">Tỷ Lệ Đã Liên Lạc</div>
+                            <div class="kpi-subtitle" id="kpiContactSub">- / - ca kết nối</div>
+                        </div>
+                    </div>
+
+                    <div class="report-kpi-card card-rebound">
+                        <div class="kpi-icon-wrap">🎯</div>
+                        <div class="kpi-content">
+                            <div class="kpi-value" id="kpiReboundRate">-%</div>
+                            <div class="kpi-title">Tỷ Lệ Sinh Viên "Quay Xe"</div>
+                            <div class="kpi-subtitle" id="kpiReboundSub">- ca hứa đi học lại</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Navigation -->
+                <div class="report-tabs-card">
+                    <div class="report-tabs-nav">
+                        <button class="tab-btn active" data-tab="tab-teachers">
+                            <span class="tab-icon">👨‍🏫</span> Tiến Độ Giảng Viên
+                        </button>
+                        <button class="tab-btn" data-tab="tab-classes-subjects">
+                            <span class="tab-icon">🏫</span> Phân Tích Lớp & Môn
+                        </button>
+                        <button class="tab-btn" data-tab="tab-outcomes">
+                            <span class="tab-icon">📊</span> Phân Bổ Kết Quả
+                        </button>
+                        <button class="tab-btn" data-tab="tab-student-details">
+                            <span class="tab-icon">📋</span> Danh Sách Chi Tiết
+                        </button>
+                    </div>
+
+                    <!-- TAB 1: BÁO CÁO TIẾN ĐỘ THEO GIẢNG VIÊN -->
+                    <div id="tab-teachers" class="tab-pane active">
+                        <div class="tab-header-flex">
+                            <div>
+                                <h3 class="tab-title">Thống Kê Tiến Độ Chăm Sóc Theo Giảng Viên</h3>
+                                <p class="tab-desc">Theo dõi khối lượng công việc và tỷ lệ hoàn thành ca chăm sóc của từng giảng viên trong kỳ.</p>
+                            </div>
+                            <div class="tab-actions">
+                                <input type="text" id="inpSearchTeacher" class="input-search-inline" placeholder="Tìm theo Mã/Tên GV...">
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-report">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 220px;">Giảng Viên</th>
+                                        <th class="text-center" style="width: 90px;">Được Giao</th>
+                                        <th class="text-center" style="width: 100px;">Đã Xử Lý</th>
+                                        <th class="text-center" style="width: 100px;">Chưa Xử Lý</th>
+                                        <th style="width: 200px;">Tiến Độ Hoàn Thành</th>
+                                        <th class="text-center" style="width: 130px;">Tình Trạng LL</th>
+                                        <th class="text-center" style="width: 140px;">Kết Quả CS</th>
+                                        <th class="text-center" style="width: 130px;">Đánh Giá</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBodyTeachers">
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted" style="padding: 30px;">Đang tính toán số liệu...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: BÁO CÁO PHÂN TÍCH LỚP & MÔN HỌC -->
+                    <div id="tab-classes-subjects" class="tab-pane">
+                        <div class="grid-2-cols">
+                            <!-- Cột Trái: Top Lớp Học Nhiều Sinh Viên Nguy Cơ -->
+                            <div class="analytics-card">
+                                <div class="analytics-card-header">
+                                    <h4>🏫 Top Lớp Học Có Nhiều Sinh Viên Nguy Cơ</h4>
+                                    <span class="badge badge-warning" id="badgeTotalClasses">- Lớp</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Lớp Học</th>
+                                                <th>Môn Học</th>
+                                                <th class="text-center">Số SV Nguy Cơ</th>
+                                                <th class="text-center">Đã CS</th>
+                                                <th style="width: 120px;">Tỷ Lệ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tableBodyTopClasses">
+                                            <tr><td colspan="5" class="text-center text-muted">Đang tải dữ liệu...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Cột Phải: Top Môn Học Nguy Cơ Trượt / Cấm Thi Cao Nhất -->
+                            <div class="analytics-card">
+                                <div class="analytics-card-header">
+                                    <h4>📖 Top Môn Học Có Nguy Cơ Vắng / Nợ Cao</h4>
+                                    <span class="badge badge-danger" id="badgeTotalSubjects">- Môn</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Môn Học</th>
+                                                <th class="text-center">Số Ca SV</th>
+                                                <th class="text-center">Vắng TB</th>
+                                                <th class="text-center">Tiên Quyết</th>
+                                                <th style="width: 120px;">Tỷ Lệ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tableBodyTopSubjects">
+                                            <tr><td colspan="5" class="text-center text-muted">Đang tải dữ liệu...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: BÁO CÁO PHÂN BỔ KẾT QUẢ & PHẢN HỒI -->
+                    <div id="tab-outcomes" class="tab-pane">
+                        <div class="grid-2-cols">
+                            <!-- Cột Trái: Phân Bổ Tình Trạng Liên Lạc -->
+                            <div class="analytics-card">
+                                <div class="analytics-card-header">
+                                    <h4>📞 Phân Bổ Tình Trạng Liên Lạc</h4>
+                                </div>
+                                <div class="distribution-bars-container" id="contactDistributionList">
+                                    <!-- Render động các thanh phân bổ -->
+                                </div>
+                            </div>
+
+                            <!-- Cột Phải: Phân Bổ Kết Quả Chăm Sóc -->
+                            <div class="analytics-card">
+                                <div class="analytics-card-header">
+                                    <h4>🎯 Phân Bổ Kết Quả Chăm Sóc</h4>
+                                </div>
+                                <div class="distribution-bars-container" id="careDistributionList">
+                                    <!-- Render động các thanh phân bổ -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: DANH SÁCH SINH VIÊN CHI TIẾT -->
+                    <div id="tab-student-details" class="tab-pane">
+                        <div class="tab-header-flex">
+                            <div>
+                                <h3 class="tab-title">Danh Sách Toàn Bộ Sinh Viên Trong Kỳ</h3>
+                                <p class="tab-desc">Dữ liệu chi tiết phục vụ tra cứu nhanh và đối soát số liệu.</p>
+                            </div>
+                            <div class="tab-filters-row">
+                                <input type="text" id="inpSearchDetail" class="input-search-inline" placeholder="Tìm theo Mã SV, Họ tên, Lớp...">
+                                <select id="filterDetailTeacher" class="filter-select-sm">
+                                    <option value="all">Tất cả Giảng viên</option>
+                                </select>
+                                <select id="filterDetailCareStatus" class="filter-select-sm">
+                                    <option value="all">Tất cả kết quả CS</option>
+                                    <option value="none">Chưa chăm sóc</option>
+                                    <option value="Đã đi học">Đã đi học</option>
+                                    <option value="Sẽ đi học">Sẽ đi học</option>
+                                    <option value="Nghỉ học kỳ">Nghỉ học kỳ</option>
+                                    <option value="Lý do khác">Lý do khác</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-report">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 100px;">Mã SV</th>
+                                        <th style="width: 160px;">Họ Tên</th>
+                                        <th style="width: 120px;">Lớp</th>
+                                        <th>Môn Học</th>
+                                        <th class="text-center" style="width: 70px;">Vắng</th>
+                                        <th style="width: 120px;">GV CS</th>
+                                        <th class="text-center" style="width: 130px;">Liên Lạc</th>
+                                        <th class="text-center" style="width: 130px;">Kết Quả CS</th>
+                                        <th style="width: 180px;">Ghi Chú</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBodyStudentsDetail">
+                                    <tr>
+                                        <td colspan="9" class="text-center text-muted" style="padding: 30px;">Đang tải danh sách...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Layout & Report Modules -->
+    <script type="module" src="js/layout.js"></script>
+    <script type="module" src="js/report.js"></script>
+</body>
+</html>

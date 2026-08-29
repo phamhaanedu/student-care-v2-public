@@ -10,14 +10,24 @@ let isEndOfData = false;
 // Trạng thái modal ACL
 let currentAclTeacherId = null;
 
+let currentSession = null;
+
 // Chờ DOM load
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Kiểm tra xác thực (Chỉ Admin/Super Admin mới được vào)
-    const session = await checkAuth();
-    if (!session || session.role === 'Teacher') {
-        alert("Bạn không có quyền truy cập trang này!");
-        window.location.href = 'index.html';
-        return;
+    currentSession = await checkAuth(['Admin', 'Super Admin']);
+    if (!currentSession) return;
+
+    // Khóa trường phân quyền ở dòng thêm mới nếu không phải Super Admin
+    const isSuperAdmin = currentSession.role === 'Super Admin';
+    if (!isSuperAdmin) {
+        const newSysRole = document.getElementById('new_system_role');
+        if (newSysRole) {
+            newSysRole.disabled = true;
+            newSysRole.title = "Chỉ Super Admin mới được thay đổi Quyền hạn";
+            newSysRole.style.backgroundColor = "#f1f3f5";
+            newSysRole.style.cursor = "not-allowed";
+        }
     }
 
     // 2. Load dữ liệu ban đầu
@@ -146,6 +156,8 @@ function renderTeachers(teachersList) {
         if (sysRoleValue === 'Giảng viên') sysRoleValue = 'Teacher';
         if (!['Teacher', 'Admin', 'Super Admin'].includes(sysRoleValue)) sysRoleValue = 'Teacher';
 
+        const isSuperAdmin = currentSession && currentSession.role === 'Super Admin';
+
         tr.innerHTML = `
             <td data-label="Thông tin chung">
                 <div class="stacked-inputs">
@@ -169,12 +181,12 @@ function renderTeachers(teachersList) {
             </td>
             <td data-label="Quyền hạn">
                 <div class="stacked-inputs" style="align-items: center;">
-                    <select class="inp-system_role" title="Phân quyền (RBAC)">
+                    <select class="inp-system_role" title="${isSuperAdmin ? 'Phân quyền (RBAC)' : 'Chỉ Super Admin mới được thay đổi Quyền hạn'}" ${!isSuperAdmin ? 'disabled style="background-color: #f1f3f5; cursor: not-allowed;"' : ''}>
                         <option value="Teacher" ${sysRoleValue === 'Teacher' ? 'selected' : ''}>Teacher</option>
                         <option value="Admin" ${sysRoleValue === 'Admin' ? 'selected' : ''}>Admin</option>
                         <option value="Super Admin" ${sysRoleValue === 'Super Admin' ? 'selected' : ''}>Super Admin</option>
                     </select>
-                    <button class="btn-icon btn-acl" title="Cấu hình ngoại lệ (ACL)" data-id="${t.docId}">⚙️</button>
+                    <button class="btn-icon btn-acl" title="${isSuperAdmin ? 'Cấu hình ngoại lệ (ACL)' : 'Chỉ Super Admin mới có quyền cấu hình ACL'}" data-id="${t.docId}" ${!isSuperAdmin ? 'disabled style="opacity: 0.4; cursor: not-allowed;"' : ''}>⚙️</button>
                 </div>
             </td>
             <td data-label="Mã NV"><input type="text" class="inp-emp_id" value="${t.emp_id || ''}"></td>
@@ -183,14 +195,14 @@ function renderTeachers(teachersList) {
             <td data-label="IBSTPI" class="text-center"><input type="checkbox" class="inp-ibstpi" ${t.ibstpi ? 'checked' : ''}></td>
             <td data-label="Ngày sinh"><input type="date" class="inp-dob" value="${dobString}"></td>
             <td data-label="SĐT"><input type="text" class="inp-phone" value="${t.phone || ''}"></td>
-            <td data-label="Khóa" class="text-center"><input type="checkbox" class="inp-lock" ${t.is_lock ? 'checked' : ''}></td>
+            <td data-label="Khóa" class="text-center"><input type="checkbox" class="inp-lock" ${t.is_lock ? 'checked' : ''} ${!isSuperAdmin ? 'disabled title="Chỉ Super Admin mới được khóa tài khoản"' : ''}></td>
             <td data-label="Thao tác" class="text-center">
                 <button class="btn-icon btn-save-row" title="Lưu dòng này" data-id="${t.docId}" disabled>💾</button>
             </td>
         `;
 
         // Gắn sự kiện onChange
-        const inputs = tr.querySelectorAll('input:not([disabled]), select');
+        const inputs = tr.querySelectorAll('input:not([disabled]), select:not([disabled])');
         inputs.forEach(inp => {
             inp.addEventListener('change', () => markRowDirty(t.docId));
         });
@@ -198,8 +210,10 @@ function renderTeachers(teachersList) {
         // Gắn sự kiện Save riêng cho dòng
         tr.querySelector('.btn-save-row').addEventListener('click', () => saveSingleRow(t.docId));
 
-        // Gắn sự kiện mở ACL Modal
-        tr.querySelector('.btn-acl').addEventListener('click', () => openAclModal(t.docId, t.name, t.acl || {}));
+        // Gắn sự kiện mở ACL Modal (chỉ gắn nếu là Super Admin)
+        if (isSuperAdmin) {
+            tr.querySelector('.btn-acl').addEventListener('click', () => openAclModal(t.docId, t.name, t.acl || {}));
+        }
 
         // Chèn trước loading row
         tbody.insertBefore(tr, loadingRow);
@@ -252,20 +266,35 @@ function collectRowData(docId) {
     if (!tr) return null;
 
     const dateStr = tr.querySelector('.inp-dob').value;
+    const isSuperAdmin = currentSession && currentSession.role === 'Super Admin';
+    const existingTeacher = allTeachers.find(t => t.docId === docId);
+
+    // Chỉ Super Admin mới được cập nhật system_role và is_lock
+    let finalSystemRole = existingTeacher ? (existingTeacher.system_role || 'Teacher') : 'Teacher';
+    if (isSuperAdmin) {
+        const sysRoleInp = tr.querySelector('.inp-system_role');
+        if (sysRoleInp) finalSystemRole = sysRoleInp.value;
+    }
+
+    let finalLock = existingTeacher ? !!existingTeacher.is_lock : false;
+    if (isSuperAdmin) {
+        const lockInp = tr.querySelector('.inp-lock');
+        if (lockInp) finalLock = lockInp.checked;
+    }
 
     return {
         name: tr.querySelector('.inp-name').value.trim(),
         email: tr.querySelector('.inp-email').value.trim(),
         type: tr.querySelector('.inp-type').value,
         role: tr.querySelector('.inp-role').value,
-        system_role: tr.querySelector('.inp-system_role').value,
+        system_role: finalSystemRole,
         emp_id: tr.querySelector('.inp-emp_id').value.trim(),
         degree: tr.querySelector('.inp-degree').value.trim(),
         pedagogy: tr.querySelector('.inp-pedagogy').checked,
         ibstpi: tr.querySelector('.inp-ibstpi').checked,
         dob: dateStringToTimestamp(dateStr),
         phone: tr.querySelector('.inp-phone').value.trim(),
-        is_lock: tr.querySelector('.inp-lock').checked
+        is_lock: finalLock
     };
 }
 
@@ -294,13 +323,14 @@ async function handleAddTeacher() {
     if (isDupEmp) return alert("Lỗi: Mã NV này đã tồn tại!");
 
     const dateStr = document.getElementById('new_dob').value;
+    const isSuperAdmin = currentSession && currentSession.role === 'Super Admin';
 
     const newData = {
         name: name,
         email: email,
         type: document.getElementById('new_type').value,
         role: document.getElementById('new_role').value,
-        system_role: document.getElementById('new_system_role').value,
+        system_role: isSuperAdmin ? document.getElementById('new_system_role').value : 'Teacher',
         emp_id: emp_id,
         degree: document.getElementById('new_degree').value.trim(),
         pedagogy: document.getElementById('new_pedagogy').checked,
@@ -330,8 +360,6 @@ async function handleAddTeacher() {
 
         // Render thẳng lên top bảng
         renderTeachers([newData]); // append
-        // Lưu ý: Sắp xếp sẽ hơi lộn nếu đẩy vào cuối. Cách xịn nhất là reload data
-        // loadTeachers(false); 
     } catch (err) {
         alert("Lỗi thêm GV: " + err.message);
     } finally {
@@ -408,6 +436,11 @@ async function handleSaveAll() {
  * ACL Modal Logic
  */
 function openAclModal(docId, teacherName, currentAcl) {
+    if (!currentSession || currentSession.role !== 'Super Admin') {
+        alert("Chỉ Super Admin mới có quyền cấu hình ngoại lệ (ACL)!");
+        return;
+    }
+
     currentAclTeacherId = docId;
     document.getElementById('aclTeacherName').textContent = teacherName || docId;
 
@@ -425,6 +458,10 @@ function closeAclModal() {
 }
 
 function saveAclModal() {
+    if (!currentSession || currentSession.role !== 'Super Admin') {
+        alert("Chỉ Super Admin mới có quyền lưu quyền ngoại lệ (ACL)!");
+        return;
+    }
     if (!currentAclTeacherId) return;
 
     // Lấy dữ liệu
@@ -444,7 +481,6 @@ function saveAclModal() {
     setDoc(ref, { acl: aclData }, { merge: true })
         .then(() => {
             closeAclModal();
-            // Đổi màu nút ACL trên UI (tuỳ chọn) để báo hiệu có ACL
         })
         .catch(err => {
             alert("Lỗi lưu Quyền ngoại lệ: " + err.message);
@@ -555,19 +591,21 @@ async function handleImportExcel(event) {
                 const sysRole = (row[6] || "Teacher").toString().trim();
                 const dateStr = (row[10] || "").toString().trim(); // Kì vọng YYYY-MM-DD
 
+                const isSuperAdmin = currentSession && currentSession.role === 'Super Admin';
+
                 const newData = {
                     name: name,
                     email: email,
                     emp_id: (row[3] || "").toString().trim(),
                     type: ["Full time", "Part time"].includes(type) ? type : "Full time",
                     role: ["Giảng viên", "Trưởng môn", "Chủ nhiệm bộ môn"].includes(role) ? role : "Giảng viên",
-                    system_role: ["Teacher", "Admin", "Super Admin"].includes(sysRole) ? sysRole : "Teacher",
+                    system_role: isSuperAdmin ? (["Teacher", "Admin", "Super Admin"].includes(sysRole) ? sysRole : "Teacher") : "Teacher",
                     degree: (row[7] || "").toString().trim(),
                     pedagogy: parseCheckbox(row[8]),
                     ibstpi: parseCheckbox(row[9]),
                     dob: dateStringToTimestamp(dateStr),
                     phone: (row[11] || "").toString().trim(),
-                    is_lock: parseCheckbox(row[12]),
+                    is_lock: isSuperAdmin ? parseCheckbox(row[12]) : false,
                     timestamp: Timestamp.now()
                 };
 

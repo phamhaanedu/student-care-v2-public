@@ -24,8 +24,8 @@ const assignTableBody = document.getElementById('assignTableBody');
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        // 1. Kiểm tra xác thực (Chỉ Admin và Super Admin được phép truy cập)
-        currentSession = await checkAuth(['Admin', 'Super Admin']);
+        // 1. Kiểm tra xác thực (Chỉ Super Admin được phép truy cập và thực hiện phân công)
+        currentSession = await checkAuth(['Super Admin']);
         if (!currentSession) return;
 
         // 2. Khởi tạo cấu hình kỳ học

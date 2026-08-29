@@ -1,0 +1,433 @@
+/* report.css - Định kiểu chuyên biệt cho Phân hệ Báo cáo & Đánh giá V2 */
+
+/* ==========================================================================
+   1. TOOLBAR & HEADER CONTROLS
+   ========================================================================== */
+.report-toolbar-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    box-shadow: var(--shadow-sm);
+}
+
+.toolbar-left,
+.toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.semester-selector-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.toolbar-label {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.select-semester {
+    font-weight: 600;
+    color: var(--primary-color);
+    border-color: rgba(111, 66, 193, 0.35);
+    background-color: rgba(111, 66, 193, 0.04);
+    min-width: 190px;
+    cursor: pointer;
+}
+
+.btn-icon-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ==========================================================================
+   2. EXECUTIVE SUMMARY KPI CARDS
+   ========================================================================== */
+.report-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+    margin-bottom: 24px;
+}
+
+.report-kpi-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.report-kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.report-kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+}
+
+.report-kpi-card.card-total::before { background-color: #6f42c1; }
+.report-kpi-card.card-completed::before { background-color: #10b981; }
+.report-kpi-card.card-contacted::before { background-color: #06b6d4; }
+.report-kpi-card.card-rebound::before { background-color: #f59e0b; }
+
+.kpi-icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+.card-total .kpi-icon-wrap { background-color: rgba(111, 66, 193, 0.1); }
+.card-completed .kpi-icon-wrap { background-color: rgba(16, 185, 129, 0.1); }
+.card-contacted .kpi-icon-wrap { background-color: rgba(6, 182, 212, 0.1); }
+.card-rebound .kpi-icon-wrap { background-color: rgba(245, 158, 11, 0.1); }
+
+.kpi-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.kpi-value {
+    font-size: 1.65rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-bottom: 2px;
+}
+
+.kpi-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+}
+
+.kpi-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* ==========================================================================
+   3. TABS NAVIGATION & CARD
+   ========================================================================== */
+.report-tabs-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 0;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.report-tabs-nav {
+    display: flex;
+    gap: 4px;
+    padding: 12px 16px 0 16px;
+    border-bottom: 1px solid var(--border-color);
+    background-color: rgba(0, 0, 0, 0.015);
+    overflow-x: auto;
+}
+
+.tab-btn {
+    padding: 10px 18px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    border-radius: 6px 6px 0 0;
+}
+
+.tab-btn:hover {
+    color: var(--primary-color);
+    background-color: rgba(111, 66, 193, 0.04);
+}
+
+.tab-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background-color: var(--card-bg);
+}
+
+.tab-pane {
+    display: none;
+    padding: 24px;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+.tab-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.tab-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.tab-desc {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.input-search-inline {
+    padding: 7px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 0.82rem;
+    background-color: var(--input-bg);
+    color: var(--text-primary);
+    min-width: 220px;
+    outline: none;
+}
+
+.input-search-inline:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.15);
+}
+
+.tab-filters-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.filter-select-sm {
+    padding: 7px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 0.82rem;
+    background-color: var(--input-bg);
+    color: var(--text-primary);
+    outline: none;
+}
+
+/* ==========================================================================
+   4. PROGRESS BARS & METRIC FORMATTING
+   ========================================================================== */
+.progress-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.progress-track {
+    flex: 1;
+    height: 8px;
+    background-color: var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progress-fill.fill-green {
+    background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.progress-fill.fill-amber {
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.progress-fill.fill-red {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.progress-text {
+    font-size: 0.8rem;
+    font-weight: 700;
+    min-width: 40px;
+    text-align: right;
+}
+
+/* ==========================================================================
+   5. TWO-COLUMN GRID & ANALYTICS CARDS (TAB 2 & 3)
+   ========================================================================== */
+.grid-2-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.analytics-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+.analytics-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.analytics-card-header h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+/* Distribution Bars Container (Tab 3) */
+.distribution-bars-container {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.dist-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.dist-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.83rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.dist-bar-track {
+    height: 10px;
+    background-color: var(--border-color);
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.dist-bar-fill {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==========================================================================
+   6. TABLE STYLING FOR REPORT
+   ========================================================================== */
+.table-report th {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.table-report td {
+    font-size: 0.84rem;
+    vertical-align: middle;
+}
+
+.eval-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.eval-excellent {
+    background-color: rgba(16, 185, 129, 0.12);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.eval-processing {
+    background-color: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.eval-warning {
+    background-color: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* ==========================================================================
+   7. RESPONSIVE MEDIA QUERIES (MOBILE / TABLET <= 992px)
+   ========================================================================== */
+@media (max-width: 992px) {
+    .grid-2-cols {
+        grid-template-columns: 1fr;
+    }
+
+    .report-toolbar-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .toolbar-left,
+    .toolbar-right {
+        justify-content: space-between;
+    }
+
+    .tab-pane {
+        padding: 16px;
+    }
+
+    .tab-header-flex {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .input-search-inline {
+        width: 100%;
+    }
+}

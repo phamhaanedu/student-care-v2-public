@@ -5,7 +5,9 @@ import { checkAuth } from './auth.js';
 
 // State
 let currentSession = null;
+let globalConfig = { available_semesters: [], current_semester: '' };
 let currentSemester = '';
+let selectedSemester = ''; // Học kỳ đang được chọn để xem
 let allTasks = []; // Toàn bộ ca (được phân công + lớp đứng lớp)
 let filteredTasks = []; // Dữ liệu hiển thị sau khi lọc/search
 const expandedRowIds = new Set(); // Tập hợp các docId đang mở rộng accordion
@@ -20,7 +22,9 @@ const kpiCompleted = document.getElementById('kpiCompleted');
 const kpiRate = document.getElementById('kpiRate');
 
 const inpSearch = document.getElementById('inpSearch');
+const selectSemesterFilter = document.getElementById('selectSemesterFilter');
 const selectScopeFilter = document.getElementById('selectScopeFilter');
+const selectClassFilter = document.getElementById('selectClassFilter');
 const selectTeacherFilter = document.getElementById('selectTeacherFilter');
 const selectContactStatusFilter = document.getElementById('selectContactStatusFilter');
 const selectCareStatusFilter = document.getElementById('selectCareStatusFilter');
@@ -46,9 +50,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 4. Đăng ký sự kiện tìm kiếm & lọc
         inpSearch.addEventListener('input', applyFilters);
         if (selectScopeFilter) selectScopeFilter.addEventListener('change', applyFilters);
+        if (selectClassFilter) selectClassFilter.addEventListener('change', applyFilters);
         selectContactStatusFilter.addEventListener('change', applyFilters);
         selectCareStatusFilter.addEventListener('change', applyFilters);
         if (selectTeacherFilter) selectTeacherFilter.addEventListener('change', applyFilters);
+
+        // Sự kiện đổi học kỳ xem dữ liệu
+        if (selectSemesterFilter) {
+            selectSemesterFilter.addEventListener('change', async (e) => {
+                selectedSemester = e.target.value;
+                showToast(`Đang tải dữ liệu học kỳ: ${selectedSemester}...`, "info");
+
+                // Reset search và các bộ lọc về mặc định
+                if (inpSearch) inpSearch.value = '';
+                if (selectScopeFilter) selectScopeFilter.value = 'all';
+                if (selectContactStatusFilter) selectContactStatusFilter.value = 'all';
+                if (selectCareStatusFilter) selectCareStatusFilter.value = 'all';
+                if (selectTeacherFilter) selectTeacherFilter.value = 'all';
+
+                // Tải lại dữ liệu của đúng kỳ đã chọn
+                await loadTasks();
+            });
+        }
 
     } catch (error) {
         console.error("Lỗi khởi tạo module Tasks:", error);
@@ -57,19 +80,56 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 /**
- * Tải kỳ học hiện tại từ Configuration/Global
+ * Sắp xếp danh sách kỳ học theo thời gian mới nhất (Năm giảm dần -> Fall -> Summer -> Spring)
+ */
+function sortSemestersList(semesters) {
+    const seasonWeight = { 'Fall': 3, 'Summer': 2, 'Spring': 1 };
+    return [...semesters].sort((a, b) => {
+        const partsA = a.split(' ');
+        const partsB = b.split(' ');
+        const seasonA = partsA[0];
+        const yearA = parseInt(partsA[1], 10) || 0;
+        const seasonB = partsB[0];
+        const yearB = parseInt(partsB[1], 10) || 0;
+
+        if (yearA !== yearB) return yearB - yearA;
+        const weightA = seasonWeight[seasonA] || 0;
+        const weightB = seasonWeight[seasonB] || 0;
+        return weightB - weightA;
+    });
+}
+
+/**
+ * Tải kỳ học hiện tại từ Configuration/Global & Đổ vào combobox chọn kỳ
  */
 async function loadCurrentSemester() {
     try {
         const configDoc = await getDoc(doc(db, "Configuration", "Global"));
         if (configDoc.exists()) {
-            currentSemester = configDoc.data().current_semester || '';
+            globalConfig = configDoc.data();
+            const available = globalConfig.available_semesters || [];
+            currentSemester = globalConfig.current_semester || (available[0] || '');
+            if (!selectedSemester) {
+                selectedSemester = currentSemester;
+            }
+
+            // Sắp xếp danh sách kỳ học theo thời gian mới nhất
+            const sortedSemesters = sortSemestersList(available);
+
+            // Đổ vào combobox selectSemesterFilter
+            if (selectSemesterFilter) {
+                selectSemesterFilter.innerHTML = sortedSemesters.map(sem => {
+                    const isCurrent = (sem === currentSemester);
+                    const label = isCurrent ? `📅 ${sem} (Hiện tại)` : `📅 ${sem}`;
+                    return `<option value="${sem}" ${sem === selectedSemester ? 'selected' : ''}>${label}</option>`;
+                }).join('');
+            }
         }
         if (!currentSemester) {
             console.warn("Chưa cấu hình current_semester trong Configuration/Global.");
         }
     } catch (e) {
-        console.error("Lỗi khi đọc current_semester:", e);
+        console.error("Lỗi khi đọc Configuration/Global:", e);
     }
 }
 
@@ -97,19 +157,17 @@ async function loadSubjectsCache() {
 }
 
 /**
- * Tra cứu thông tin môn học trong Cache
+ * Tra cứu thông tin môn học trong cache Subjects
  */
 function findSubjectData(courseCode) {
     if (!courseCode) return null;
-    const clean = courseCode.trim();
-    if (subjectsCache.has(clean)) return subjectsCache.get(clean);
+    if (subjectsCache.has(courseCode)) return subjectsCache.get(courseCode);
 
-    // Thử tách mã gốc, ví dụ: "GAM109 (GAM109)" -> "GAM109"
-    const baseCode = clean.split(' ')[0].split('(')[0].trim();
-    if (baseCode && subjectsCache.has(baseCode)) return subjectsCache.get(baseCode);
+    const cleanCode = courseCode.split(' ')[0].split('(')[0].trim();
+    if (subjectsCache.has(cleanCode)) return subjectsCache.get(cleanCode);
 
-    for (const [key, val] of subjectsCache.entries()) {
-        if (key.startsWith(baseCode) || key.includes(clean) || (val.course_name && val.course_name.includes(clean))) {
+    for (let [key, val] of subjectsCache.entries()) {
+        if (key.startsWith(cleanCode) || (val.course_name && val.course_name.toLowerCase().includes(cleanCode.toLowerCase()))) {
             return val;
         }
     }
@@ -117,13 +175,13 @@ function findSubjectData(courseCode) {
 }
 
 /**
- * Tính toán Học kỳ liền kề trước đó (Previous Semester)
- * Quy luật: Spring -> Summer -> Fall
+ * Tính toán Học kỳ Liền Kề Trước Đó
  */
 function getPreviousSemester(semesterStr) {
     if (!semesterStr) return '';
-    const parts = semesterStr.trim().split(/\s+/);
+    const parts = semesterStr.trim().split(' ');
     if (parts.length < 2) return '';
+
     const season = parts[0].toLowerCase();
     const year = parseInt(parts[1], 10);
     if (isNaN(year)) return '';
@@ -135,14 +193,14 @@ function getPreviousSemester(semesterStr) {
 }
 
 /**
- * Tải danh sách ca phân công & Lớp đứng lớp theo quyền (RBAC)
+ * Tải danh sách ca phân công & Lớp đứng lớp theo quyền (RBAC) cho Học kỳ đã chọn
  */
 async function loadTasks() {
     tasksTableBody.innerHTML = `
         <tr>
             <td colspan="11" class="text-center" style="padding: 40px;">
                 <div class="loader" style="display: inline-block; width: 32px; height: 32px; border-top-color: var(--primary-color);"></div>
-                <div style="margin-top: 10px; color: var(--text-secondary); font-size: 0.85rem;">Đang tải danh sách sinh viên...</div>
+                <div style="margin-top: 10px; color: var(--text-secondary); font-size: 0.85rem;">Đang tải danh sách sinh viên (${selectedSemester || currentSemester})...</div>
             </td>
         </tr>
     `;
@@ -152,18 +210,19 @@ async function loadTasks() {
         const isTeacher = currentSession.role === 'Teacher';
         const tasksMap = new Map();
         const teacherSet = new Set();
+        const activeSemester = selectedSemester || currentSemester;
 
         if (isTeacher) {
-            // 1. Teacher: Lấy song song 2 nguồn (Ca được phân công + Ca lớp đứng lớp)
+            // 1. Teacher: Lấy song song 2 nguồn (Ca được phân công + Ca lớp đứng lớp) của đúng activeSemester
             const qAssigned = query(
                 collection(db, "AcademicRecords"),
-                where("semester", "==", currentSemester),
+                where("semester", "==", activeSemester),
                 where("caregiver_id", "==", teacherId)
             );
 
             const qTeaching = query(
                 collection(db, "AcademicRecords"),
-                where("semester", "==", currentSemester),
+                where("semester", "==", activeSemester),
                 where("teacher_id", "==", teacherId)
             );
 
@@ -191,10 +250,10 @@ async function loadTasks() {
             });
 
         } else {
-            // 2. Admin / Super Admin: Query toàn bộ ca trong kỳ hiện tại
+            // 2. Admin / Super Admin: Query toàn bộ ca trong activeSemester
             const q = query(
                 collection(db, "AcademicRecords"),
-                where("semester", "==", currentSemester)
+                where("semester", "==", activeSemester)
             );
 
             const querySnapshot = await getDocs(q);
@@ -228,6 +287,9 @@ async function loadTasks() {
         // Sắp xếp mặc định: THEO MÃ SỐ SINH VIÊN (A -> Z)
         allTasks.sort((a, b) => (a.student_id || '').localeCompare(b.student_id || ''));
 
+        // Đổ danh sách Lớp - Môn học vào Dropdown bộ lọc
+        populateClassFilter(allTasks);
+
         // Áp dụng bộ lọc & render
         applyFilters();
 
@@ -244,11 +306,56 @@ async function loadTasks() {
 }
 
 /**
+ * Tự động trích xuất và đổ danh sách Lớp - Môn học vào dropdown bộ lọc
+ */
+function populateClassFilter(tasks) {
+    if (!selectClassFilter) return;
+
+    const currentVal = selectClassFilter.value || 'all';
+    const classMap = new Map();
+
+    tasks.forEach(item => {
+        const cls = item.class_name || item.class_id || 'Chưa rõ lớp';
+        const rawCode = item.course_code || 'Chưa rõ môn';
+        const key = `${cls}___${rawCode}`;
+
+        if (!classMap.has(key)) {
+            const subjObj = findSubjectData(rawCode);
+            const courseName = subjObj && subjObj.course_name ? subjObj.course_name : '';
+            classMap.set(key, {
+                class_name: cls,
+                course_code: rawCode,
+                course_name: courseName,
+                count: 1
+            });
+        } else {
+            classMap.get(key).count++;
+        }
+    });
+
+    let optionsHtml = `<option value="all">Tất cả Lớp - Môn học (${tasks.length} SV)</option>`;
+
+    // Sắp xếp theo tên lớp A-Z
+    const sortedClasses = Array.from(classMap.entries()).sort((a, b) => {
+        return a[1].class_name.localeCompare(b[1].class_name);
+    });
+
+    sortedClasses.forEach(([key, info]) => {
+        const courseDisplay = info.course_name ? `${info.course_code} - ${info.course_name}` : info.course_code;
+        const selected = (key === currentVal) ? 'selected' : '';
+        optionsHtml += `<option value="${key}" ${selected}>🏫 ${info.class_name} | ${courseDisplay} (${info.count} SV)</option>`;
+    });
+
+    selectClassFilter.innerHTML = optionsHtml;
+}
+
+/**
  * Bộ lọc & Tìm kiếm Tức thì (Instant Search/Filter)
  */
 function applyFilters() {
     const searchVal = inpSearch.value.trim().toLowerCase();
     const scopeVal = selectScopeFilter ? selectScopeFilter.value : 'all';
+    const classVal = selectClassFilter ? selectClassFilter.value : 'all';
     const contactVal = selectContactStatusFilter.value;
     const careVal = selectCareStatusFilter.value;
     const teacherVal = selectTeacherFilter ? selectTeacherFilter.value : 'all';
@@ -269,11 +376,20 @@ function applyFilters() {
             matchScope = item.is_teaching === true;
         }
 
-        // 3. Lọc Tình trạng liên lạc
+        // 3. Lọc theo Lớp - Môn học
+        let matchClass = true;
+        if (classVal !== 'all') {
+            const [filterClass, filterCourse] = classVal.split('___');
+            const itemClass = item.class_name || item.class_id || 'Chưa rõ lớp';
+            const itemCourse = item.course_code || 'Chưa rõ môn';
+            matchClass = (itemClass === filterClass && itemCourse === filterCourse);
+        }
+
+        // 4. Lọc Tình trạng liên lạc
         const currentContact = item.contact_status || 'Chưa liên lạc';
         const matchContact = (contactVal === 'all') || (currentContact === contactVal);
 
-        // 4. Lọc Tình trạng chăm sóc
+        // 5. Lọc Tình trạng chăm sóc
         let matchCare = true;
         if (careVal === 'none') {
             matchCare = !item.care_status;
@@ -281,10 +397,10 @@ function applyFilters() {
             matchCare = (item.care_status === careVal);
         }
 
-        // 5. Lọc Giảng viên chăm sóc (Admin)
+        // 6. Lọc Giảng viên chăm sóc (Admin)
         const matchTeacher = (teacherVal === 'all') || (item.caregiver_id === teacherVal);
 
-        return matchSearch && matchScope && matchContact && matchCare && matchTeacher;
+        return matchSearch && matchScope && matchClass && matchContact && matchCare && matchTeacher;
     });
 
     // Cập nhật Thẻ KPI
@@ -628,7 +744,7 @@ async function renderInlineWorkspace(docId, studentId) {
                     <div class="panel-header" style="margin-top: 8px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
                         <h4>📊 Hồ Sơ Nợ Môn (${debts.length})</h4>
                     </div>
-                    ${renderDebts2TierHtml(studentData, currentSemester)}
+                    ${renderDebts2TierHtml(studentData, selectedSemester || currentSemester)}
                 </div>
 
                 <!-- CỘT 2: 📝 Nhận Xét GV Đứng Lớp (Phía Trên) & 🕒 Lịch Sử Chăm Sóc (Phía Dưới) -->

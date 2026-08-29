@@ -117,6 +117,20 @@
     font-weight: 600;
 }
 
+.table-teachers td select:disabled,
+.table-teachers td input:disabled {
+    background-color: #f1f3f5 !important;
+    color: #6c757d !important;
+    cursor: not-allowed;
+    border-color: #e9ecef;
+}
+
+.table-teachers .btn-icon:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 /* Modal ACL Styles */
 .modal-overlay {
     position: fixed;

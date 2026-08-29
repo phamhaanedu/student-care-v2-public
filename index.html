@@ -57,11 +57,21 @@
                         <input type="text" id="inpSearch" class="input-search" placeholder="Tìm theo Mã SV, Họ tên sinh viên...">
                     </div>
                     <div class="filter-controls">
+                        <!-- Chọn Học kỳ (Mặc định kỳ hiện tại) -->
+                        <select id="selectSemesterFilter" class="filter-select" style="font-weight: 600; color: var(--primary-color); border-color: rgba(111, 66, 193, 0.4); background-color: rgba(111, 66, 193, 0.04);">
+                            <option value="">Đang tải kỳ học...</option>
+                        </select>
+
                         <!-- Lọc theo Phạm vi (Chăm sóc / Đứng lớp) -->
                         <select id="selectScopeFilter" class="filter-select">
                             <option value="all">Toàn bộ sinh viên (Phân công + Đứng lớp)</option>
                             <option value="assigned">🎯 Ca được phân công chăm sóc</option>
                             <option value="teaching">🏫 Ca lớp tôi đứng lớp</option>
+                        </select>
+
+                        <!-- Lọc theo Lớp - Môn học -->
+                        <select id="selectClassFilter" class="filter-select">
+                            <option value="all">Tất cả Lớp - Môn học</option>
                         </select>
 
                         <!-- Lọc theo GV (chỉ hiện khi Admin xem) -->

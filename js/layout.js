@@ -26,10 +26,6 @@ function renderLayout(session) {
                     <span class="nav-icon">🏠</span>
                     <span class="nav-text">Tổng quan (Nhiệm vụ)</span>
                 </a>
-                <a href="my-classes.html" class="nav-item ${isActive('my-classes.html')}">
-                    <span class="nav-icon">📚</span>
-                    <span class="nav-text">Lớp của tôi</span>
-                </a>
         `;
 
         if (role === 'Admin' || role === 'Super Admin') {
@@ -42,10 +38,6 @@ function renderLayout(session) {
                     <span class="nav-icon">📖</span>
                     <span class="nav-text">Quản lý Môn học</span>
                 </a>
-                <a href="assign.html" class="nav-item ${isActive('assign.html')}">
-                    <span class="nav-icon">🎯</span>
-                    <span class="nav-text">Phân công</span>
-                </a>
                 <a href="report.html" class="nav-item ${isActive('report.html')}">
                     <span class="nav-icon">📊</span>
                     <span class="nav-text">Báo cáo</span>
@@ -55,6 +47,10 @@ function renderLayout(session) {
 
         if (role === 'Super Admin') {
             menuHtml += `
+                <a href="assign.html" class="nav-item ${isActive('assign.html')}">
+                    <span class="nav-icon">🎯</span>
+                    <span class="nav-text">Phân công</span>
+                </a>
                 <a href="list-semesters.html" class="nav-item ${isActive('list-semesters.html')}">
                     <span class="nav-icon">⚙️</span>
                     <span class="nav-text">Cấu hình Hệ thống</span>
