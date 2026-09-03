@@ -58,7 +58,7 @@
                                     <th class="col-mode">Hình Thức</th>
                                     <th class="col-sessions text-center">Tổng Buổi</th>
                                     <th class="col-absences text-center">Vắng Tối Đa</th>
-                                    <th class="col-prereq text-center" title="Môn Tiên Quyết (Điều kiện mở môn)">⚡ Tiên Quyết</th>
+                                    <th class="col-prereq" title="Môn Tiên Quyết (Điều kiện mở môn - nhập các mã môn cách nhau bằng dấu phẩy)">⚡ Môn Tiên Quyết</th>
                                     <th class="col-action text-center">Thao tác</th>
                                 </tr>
                             </thead>
@@ -87,12 +87,13 @@
                                     <td data-label="Vắng Tối Đa" class="text-center">
                                         <input type="number" id="new_max_absences" placeholder="2" min="0" max="20" style="text-align: center;">
                                     </td>
-                                    <td data-label="⚡ Tiên Quyết" class="text-center">
-                                        <input type="checkbox" id="new_is_prerequisite" title="Đánh dấu là môn tiên quyết">
+                                    <td data-label="⚡ Môn Tiên Quyết">
+                                        <input type="text" id="new_prerequisites" placeholder="VD: GAM101, PRO101" style="font-size: 0.8rem;">
                                     </td>
                                     <td data-label="Thao tác" class="text-center">
                                         <button id="btnAddSubject" class="btn-icon btn-add" title="Thêm Môn học mới">+</button>
                                     </td>
+
                                 </tr>
                                 <!-- Dynamic rows will be rendered here -->
                                 <tr id="loadingRow">

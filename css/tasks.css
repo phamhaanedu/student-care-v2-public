@@ -573,10 +573,11 @@
 /* 5. Health Bars Visualization */
 .health-bars-box {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 12px;
     margin-bottom: 14px;
 }
+
 
 .health-item {
     background: #fff;
@@ -958,6 +959,79 @@
     font-weight: 600;
     display: inline-block;
 }
+
+/* Tiến độ tất cả môn trong kỳ (Semester Cross-Subject Attendance) */
+.semester-courses-summary {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 12px;
+}
+
+.semester-courses-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 6px;
+}
+
+.courses-list-mini {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.course-item-mini {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.78rem;
+}
+
+.course-item-mini.active-course {
+    border-left: 3px solid #6f42c1;
+    background: #faf7ff;
+}
+
+.badge-absence-pill {
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+.badge-absence-pill.safe { background: #dcfce7; color: #15803d; }
+.badge-absence-pill.warning { background: #fef3c7; color: #b45309; }
+.badge-absence-pill.danger { background: #fee2e2; color: #b91c1c; }
+
+/* Persona Banner */
+.persona-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    padding: 6px 10px;
+    margin-bottom: 10px;
+    font-size: 0.8rem;
+}
+.persona-banner-title {
+    font-weight: 700;
+    color: #1e40af;
+}
+.persona-banner-desc {
+    color: #3b82f6;
+    font-size: 0.76rem;
+}
+
 
 /* 8. Care Action Card (Right Form) */
 .care-action-card {

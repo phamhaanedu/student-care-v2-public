@@ -154,16 +154,71 @@
                             <option value="Lý do khác">Lý do khác</option>
                         </select>
                     </div>
+
+                    <!-- Lọc theo Tình trạng nợ môn -->
+                    <div class="filter-item">
+                        <label for="selectDebtFilter" class="filter-label">📚 Nợ môn</label>
+                        <select id="selectDebtFilter" class="filter-select">
+                            <option value="all">Tất cả nợ môn</option>
+                            <option value="critical_debt">🚨 Nợ nhiều (≥ 3 môn)</option>
+                            <option value="has_debt">⚠️ Có nợ môn (≥ 1 môn)</option>
+                            <option value="recent_debt">⚡ Vừa nợ kỳ trước</option>
+                            <option value="prereq_debt">🔗 Nợ môn tiên quyết</option>
+                            <option value="no_debt">🟢 Không nợ môn (0 môn)</option>
+                        </select>
+                    </div>
+
+                    <!-- Lọc theo Nguyên nhân gốc rễ -->
+                    <div class="filter-item">
+                        <label for="selectRootCauseFilter" class="filter-label">🎯 Nguyên nhân</label>
+                        <select id="selectRootCauseFilter" class="filter-select">
+                            <option value="all">Tất cả nguyên nhân</option>
+                            <option value="JOB_CONFLICT">💼 Đi làm thêm / Trùng ca</option>
+                            <option value="LOST_MOTIVATION">📉 Mất động lực / Chán ngành</option>
+                            <option value="KNOWLEDGE_GAP">📚 Hổng kiến thức / Môn khó</option>
+                            <option value="HEALTH_FAMILY">🏥 Sức khỏe / Gia đình</option>
+                            <option value="FINANCIAL">💸 Tài chính / Học phí</option>
+                            <option value="OTHER">❓ Lý do khác</option>
+                        </select>
+                    </div>
+
+
+
+                    <!-- Nút Gửi Email Hàng Loạt -->
+                    <div class="filter-item filter-action-item" style="display: flex; align-items: flex-end;">
+                        <button type="button" id="btnBulkSendEmail" class="btn btn-primary" style="height: 38px; display: none; align-items: center; gap: 6px; font-weight: 600; font-size: 0.84rem; background: #6f42c1;" title="Gửi email nhắc nhở cho các sinh viên đã chọn">
+                            <span>✉️ Gửi Email (0)</span>
+                        </button>
+                    </div>
+
+                    <!-- Nút Sao Chép MSSV Dạng Mảng -->
+                    <div class="filter-item filter-action-item" style="display: flex; align-items: flex-end;">
+                        <button type="button" id="btnCopyStudentIds" class="btn btn-secondary" style="height: 38px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.84rem;" title="Sao chép toàn bộ mã số sinh viên trong danh sách hiện tại theo dạng mảng [PH49836, PH49938]">
+                            <span>📋 Copy MSSV</span>
+                        </button>
+                    </div>
+
+                    <!-- Nút Làm Mới Dữ Liệu -->
+                    <div class="filter-item filter-action-item" style="display: flex; align-items: flex-end;">
+                        <button type="button" id="btnRefreshTasks" class="btn btn-secondary" style="height: 38px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.84rem;" title="Tải lại dữ liệu mới nhất từ Server">
+                            <span>🔄 Làm mới</span>
+                        </button>
+                    </div>
                 </div>
+
 
                 <!-- Bảng Danh Sách Nhiệm Vụ (Expandable Data Table) -->
                 <div class="table-tasks-container">
                     <table class="table-tasks">
                         <thead>
                             <tr>
+                                <th class="col-select text-center" style="width: 36px;">
+                                    <input type="checkbox" id="chkSelectAllTasks" title="Chọn tất cả">
+                                </th>
                                 <th class="col-expand text-center" style="width: 44px;"></th>
                                 <th class="col-student-id">Mã SV</th>
                                 <th class="col-name">Họ Tên</th>
+
                                 <th class="col-course">Môn Học</th>
                                 <th class="col-class">Lớp & Block</th>
                                 <th class="col-absence text-center">Vắng</th>

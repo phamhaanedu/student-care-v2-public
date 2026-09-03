@@ -2,6 +2,12 @@
 
 import { db, doc, getDoc, getDocs, collection, query, where, writeBatch, Timestamp } from './firebase-init.js';
 import { checkAuth } from './auth.js';
+import { SemesterService } from './services/semester-service.js';
+import { AcademicService } from './services/academic-service.js';
+import { formatDateTime } from './utils/date-helpers.js';
+import { showToast } from './utils/toast.js';
+import { getAbsenceBadgeClass, getBlockBadgeHtml, getClassStatusIcon } from './utils/dom-helpers.js';
+import { SYSTEM_ROLES, CLASS_STATUS, BLOCK_TYPES, ABSENCE_FILTERS } from './constants/index.js';
 
 // State
 let globalConfig = { available_semesters: [], current_semester: '' };
@@ -42,11 +48,12 @@ const modalSemesterLabel = document.getElementById('modalSemesterLabel');
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         // 1. Kiểm tra xác thực (Chỉ Super Admin được phép truy cập và thực hiện phân công)
-        currentSession = await checkAuth(['Super Admin']);
+        currentSession = await checkAuth([SYSTEM_ROLES.SUPER_ADMIN]);
         if (!currentSession) return;
 
         // 2. Khởi tạo cấu hình kỳ học
         await initSemesterConfig();
+
 
         // 3. Đăng ký sự kiện bộ lọc
         selectSemester.addEventListener('change', handleSemesterChange);
@@ -289,30 +296,6 @@ function applyFilterAndRender() {
     renderTable();
 }
 
-/**
- * Format thời gian DD/MM/YYYY HH:mm
- */
-function formatDateTime(timeVal) {
-    if (!timeVal) return '-';
-    let dateObj;
-    if (typeof timeVal.toDate === 'function') {
-        dateObj = timeVal.toDate();
-    } else if (timeVal.seconds) {
-        dateObj = new Date(timeVal.seconds * 1000);
-    } else {
-        dateObj = new Date(timeVal);
-    }
-
-    if (isNaN(dateObj.getTime())) return '-';
-
-    const dd = String(dateObj.getDate()).padStart(2, '0');
-    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const yyyy = dateObj.getFullYear();
-    const hh = String(dateObj.getHours()).padStart(2, '0');
-    const min = String(dateObj.getMinutes()).padStart(2, '0');
-
-    return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
-}
 
 /**
  * Render bảng danh sách sinh viên

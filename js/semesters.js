@@ -1,29 +1,28 @@
-import { db, doc, getDoc, setDoc, collection, query, where, getDocs, limit } from './firebase-init.js';
+// client/js/semesters.js - Controller Quản lý Kỳ học
+
+import { db, collection, query, where, getDocs, limit } from './firebase-init.js';
 import { checkAuth } from './auth.js';
+import { SemesterService } from './services/semester-service.js';
+import { sortSemestersList } from './utils/date-helpers.js';
+import { showToast } from './utils/toast.js';
+import { SYSTEM_ROLES } from './constants/index.js';
 
 let globalConfig = {
     available_semesters: [],
     current_semester: ""
 };
 
-// Elements
+// DOM Elements
 const tableBody = document.getElementById('semestersTableBody');
-const inputNew = document.getElementById('newSemesterInput');
 const btnAdd = document.getElementById('btnAddSemester');
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const session = await checkAuth();
-        // Chỉ Super Admin mới được cấu hình kỳ học
-        if (session.role !== 'Super Admin') {
-            alert("Bạn không có quyền truy cập trang này!");
-            window.location.href = "index.html";
-            return;
-        }
+        const session = await checkAuth([SYSTEM_ROLES.SUPER_ADMIN]);
+        if (!session) return;
         
         await loadSemesters();
-        
-        btnAdd.addEventListener('click', handleAddSemester);
+        if (btnAdd) btnAdd.addEventListener('click', handleAddSemester);
     } catch (error) {
         console.error("Auth error", error);
     }
@@ -31,52 +30,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadSemesters() {
     try {
-        const docRef = doc(db, 'Configuration', 'Global');
-        const docSnap = await getDoc(docRef);
-        
-        if (docSnap.exists()) {
-            globalConfig = docSnap.data();
-            if (!globalConfig.available_semesters) globalConfig.available_semesters = [];
-            
-            // Sắp xếp
-            globalConfig.available_semesters = sortSemesters(globalConfig.available_semesters);
-        }
-        
+        const config = await SemesterService.getGlobalConfig(true);
+        globalConfig.available_semesters = config.available_semesters || [];
+        globalConfig.current_semester = config.current_semester || '';
         renderTable();
     } catch (e) {
         console.error("Lỗi tải kỳ học", e);
-        tableBody.innerHTML = `<tr><td colspan="2" class="text-center text-error">Lỗi tải dữ liệu: ${e.message}</td></tr>`;
+        if (tableBody) {
+            tableBody.innerHTML = `<tr><td colspan="2" class="text-center text-error">Lỗi tải dữ liệu: ${e.message}</td></tr>`;
+        }
     }
 }
 
-function sortSemesters(semesters) {
-    const seasonWeight = {
-        'Fall': 3,
-        'Summer': 2,
-        'Spring': 1
-    };
-
-    return semesters.sort((a, b) => {
-        const partsA = a.split(' ');
-        const partsB = b.split(' ');
-        
-        const seasonA = partsA[0];
-        const yearA = parseInt(partsA[1]) || 0;
-        
-        const seasonB = partsB[0];
-        const yearB = parseInt(partsB[1]) || 0;
-
-        if (yearA !== yearB) {
-            return yearB - yearA; // Năm giảm dần
-        }
-        
-        const weightA = seasonWeight[seasonA] || 0;
-        const weightB = seasonWeight[seasonB] || 0;
-        return weightB - weightA; // Mùa giảm dần
-    });
-}
-
 function renderTable() {
+    if (!tableBody) return;
+
     // Giữ lại hàng đầu tiên (form Add)
     const firstRow = `
         <tr class="row-add">
@@ -121,19 +89,24 @@ function renderTable() {
     tableBody.innerHTML = html;
     
     // Gắn lại sự kiện cho nút Add vì innerHTML đã ghi đè
-    document.getElementById('btnAddSemester').addEventListener('click', handleAddSemester);
-    // Cho phép ấn Enter
-    document.getElementById('newSemesterInput').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') handleAddSemester();
-    });
+    const newBtnAdd = document.getElementById('btnAddSemester');
+    if (newBtnAdd) newBtnAdd.addEventListener('click', handleAddSemester);
+    
+    const newSemesterInput = document.getElementById('newSemesterInput');
+    if (newSemesterInput) {
+        newSemesterInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') handleAddSemester();
+        });
+    }
 }
 
 async function handleAddSemester() {
     const input = document.getElementById('newSemesterInput');
+    if (!input) return;
     let val = input.value.trim();
     if (!val) return;
     
-    // Validate Regex: Chỉ cho phép định dạng "Spring 2026", "Summer 2026", "Fall 2026" (không phân biệt hoa thường lúc nhập)
+    // Validate Regex: Chỉ cho phép định dạng "Spring 2026", "Summer 2026", "Fall 2026"
     const regex = /^(Spring|Summer|Fall)\s(\d{4})$/i;
     const match = val.match(regex);
     
@@ -148,19 +121,19 @@ async function handleAddSemester() {
     val = `${season} ${year}`;
     
     if (globalConfig.available_semesters.includes(val)) {
-        alert("Kỳ học này đã tồn tại trong hệ thống!");
+        showToast("Kỳ học này đã tồn tại trong hệ thống!", "warning");
         return;
     }
     
     globalConfig.available_semesters.push(val);
-    globalConfig.available_semesters = sortSemesters(globalConfig.available_semesters);
+    globalConfig.available_semesters = sortSemestersList(globalConfig.available_semesters);
     
-    // Nếu đây là kỳ đầu tiên được thêm vào, mặc định set làm current
     if (globalConfig.available_semesters.length === 1) {
         globalConfig.current_semester = val;
     }
     
-    await saveConfigToFirestore();
+    await SemesterService.saveGlobalConfig(globalConfig.available_semesters, globalConfig.current_semester);
+    showToast(`Đã thêm kỳ học mới: ${val}`, "success");
     input.value = "";
     renderTable();
 }
@@ -168,10 +141,11 @@ async function handleAddSemester() {
 window.handleSetCurrent = async function(semester) {
     if (confirm(`Bạn muốn thiết lập [${semester}] làm kỳ học hiện tại của hệ thống?`)) {
         globalConfig.current_semester = semester;
-        await saveConfigToFirestore();
+        await SemesterService.saveGlobalConfig(globalConfig.available_semesters, globalConfig.current_semester);
+        showToast(`Đã đổi kỳ hiện tại sang: ${semester}`, "success");
         renderTable();
     }
-}
+};
 
 window.handleDeleteSemester = async function(semester) {
     if (!confirm(`⚠️ BẠN CÓ CHẮC CHẮN MUỐN XÓA KỲ HỌC: ${semester}?\n\nHành động này sẽ xóa khỏi danh sách cấu hình hệ thống.`)) {
@@ -191,26 +165,16 @@ window.handleDeleteSemester = async function(semester) {
         // Tiến hành xóa
         globalConfig.available_semesters = globalConfig.available_semesters.filter(s => s !== semester);
         
-        // Nếu xóa trúng kỳ hiện tại, reset current_semester
         if (globalConfig.current_semester === semester) {
             globalConfig.current_semester = globalConfig.available_semesters.length > 0 ? globalConfig.available_semesters[0] : "";
         }
         
-        await saveConfigToFirestore();
+        await SemesterService.saveGlobalConfig(globalConfig.available_semesters, globalConfig.current_semester);
+        showToast(`Đã xóa kỳ học: ${semester}`, "success");
         renderTable();
         
     } catch (e) {
         console.error("Lỗi khi kiểm tra dữ liệu", e);
-        alert("Có lỗi xảy ra khi kiểm tra ràng buộc xóa.");
+        showToast("Có lỗi xảy ra khi xóa kỳ học: " + e.message, "error");
     }
-}
-
-async function saveConfigToFirestore() {
-    try {
-        const docRef = doc(db, 'Configuration', 'Global');
-        await setDoc(docRef, globalConfig, { merge: true });
-    } catch (e) {
-        console.error("Lỗi lưu cấu hình", e);
-        alert("Lỗi khi lưu dữ liệu lên server!");
-    }
-}
+};

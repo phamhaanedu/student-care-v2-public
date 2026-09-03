@@ -1,7 +1,14 @@
 // subjects.js - Quản lý Danh mục Môn học (Subjects Management) & Quét Khám Phá Môn Mới Theo Kỳ
 
-import { db, collection, getDocs, getDoc, doc, setDoc, deleteDoc, writeBatch, query, where } from './firebase-init.js';
+import { db, collection, getDocs, doc, setDoc, deleteDoc, writeBatch, query, where } from './firebase-init.js';
 import { checkAuth } from './auth.js';
+import { SemesterService } from './services/semester-service.js';
+import { SubjectService } from './services/subject-service.js';
+import { StorageCache } from './utils/storage-cache.js';
+import { showToast } from './utils/toast.js';
+import { exportToExcel } from './utils/excel-exporter.js';
+import { SYSTEM_ROLES } from './constants/index.js';
+
 
 let allSubjects = []; // Danh sách môn học đã tải
 let dirtyRows = new Set(); // Chứa các docId bị sửa
@@ -38,13 +45,11 @@ async function init() {
 
     try {
         // 1. Kiểm tra xác thực (Chỉ Admin & Super Admin)
-        const session = await checkAuth();
-        if (!session || session.role === 'Teacher') {
-            alert("Bạn không có quyền truy cập trang này!");
-            window.location.href = 'index.html';
-            return;
-        }
+        const session = await checkAuth([SYSTEM_ROLES.ADMIN, SYSTEM_ROLES.SUPER_ADMIN]);
+        if (!session) return;
+
         currentSession = session;
+
 
         // 2. Tải kỳ học hiện tại & Danh sách môn học
         await Promise.all([
@@ -88,10 +93,8 @@ if (document.readyState === 'loading') {
  */
 async function loadCurrentSemester() {
     try {
-        const configDoc = await getDoc(doc(db, "Configuration", "Global"));
-        if (configDoc.exists()) {
-            currentSemester = configDoc.data().current_semester || '';
-        }
+        const config = await SemesterService.getGlobalConfig();
+        currentSemester = config.current_semester || '';
         if (txtCurrentSemester) {
             txtCurrentSemester.textContent = currentSemester || 'Chưa cấu hình kỳ';
         }
@@ -100,10 +103,12 @@ async function loadCurrentSemester() {
     }
 }
 
+
 /**
- * Tải danh sách môn học từ Firestore (Sắp xếp theo Mã môn từ A-Z)
+ * Tải danh sách môn học từ Cache / Firestore (Sắp xếp theo Mã môn từ A-Z)
+ * @param {boolean} forceRefresh
  */
-async function loadSubjects() {
+async function loadSubjects(forceRefresh = false) {
     if (loadingRow) loadingRow.style.display = 'table-row';
     if (tbody) tbody.querySelectorAll('.subject-row').forEach(r => r.remove());
     allSubjects = [];
@@ -111,22 +116,21 @@ async function loadSubjects() {
     updateSaveAllButtonState();
 
     try {
-        console.log("Đang tải danh mục môn học từ Firestore...");
-        const querySnapshot = await getDocs(collection(db, "Subjects"));
+        console.log("Đang tải danh mục môn học qua SubjectService...");
+        const subMap = await SubjectService.getSubjectsMap(forceRefresh);
         
-        querySnapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            data.docId = docSnap.id;
-            allSubjects.push(data);
+        subMap.forEach((data, docId) => {
+            allSubjects.push({ ...data, docId: docId });
         });
 
         console.log(`Đã tải thành công ${allSubjects.length} môn học.`);
 
         // Sắp xếp theo Mã môn (docId) từ A-Z
-        allSubjects.sort((a, b) => a.docId.localeCompare(b.docId));
+        allSubjects.sort((a, b) => (a.docId || '').localeCompare(b.docId || ''));
 
         renderSubjects(allSubjects);
         updateCountBadge(allSubjects.length);
+
 
     } catch (error) {
         console.error("Lỗi tải danh mục môn học:", error);
@@ -162,10 +166,12 @@ function renderSubjects(subjectsList) {
         tr.className = 'subject-row';
         tr.dataset.id = s.docId;
 
-        const isPrereq = s.is_prerequisite === true;
         const totalSessions = s.total_sessions !== undefined ? s.total_sessions : 12;
         const maxAbsences = s.max_absences !== undefined ? s.max_absences : 2;
         const learningMode = s.learning_mode || 'Traditional';
+        const prereqStr = Array.isArray(s.prerequisites) 
+            ? s.prerequisites.join(', ') 
+            : (s.prerequisites || (s.is_prerequisite ? 'Tiên quyết' : ''));
 
         tr.innerHTML = `
             <td data-label="Mã Môn">
@@ -190,13 +196,14 @@ function renderSubjects(subjectsList) {
             <td data-label="Vắng Tối Đa" class="text-center">
                 <input type="number" class="inp-field inp-max_absences" value="${maxAbsences}" min="0" max="20" style="text-align: center;">
             </td>
-            <td data-label="⚡ Tiên Quyết" class="text-center">
-                <input type="checkbox" class="inp-field inp-is_prerequisite" ${isPrereq ? 'checked' : ''} title="Đánh dấu môn tiên quyết">
+            <td data-label="⚡ Môn Tiên Quyết">
+                <input type="text" class="inp-field inp-prerequisites" value="${prereqStr}" placeholder="VD: GAM101, PRO101" style="font-size: 0.8rem;">
             </td>
             <td data-label="Thao tác" class="text-center">
                 <button class="btn-icon btn-delete" data-id="${s.docId}" title="Xóa môn học này">🗑️</button>
             </td>
         `;
+
 
         // Gắn sự kiện theo dõi thay đổi (Dirty Tracking)
         tr.querySelectorAll('.inp-field').forEach(input => {
@@ -423,7 +430,7 @@ async function handleAddSubject() {
     const selectMode = document.getElementById('new_learning_mode');
     const inpSessions = document.getElementById('new_total_sessions');
     const inpAbsences = document.getElementById('new_max_absences');
-    const chkPrereq = document.getElementById('new_is_prerequisite');
+    const inpPrereq = document.getElementById('new_prerequisites');
     const btnAdd = document.getElementById('btnAddSubject');
 
     const docId = inpDocId.value.trim();
@@ -432,7 +439,9 @@ async function handleAddSubject() {
     const learning_mode = selectMode.value;
     const total_sessions = parseInt(inpSessions.value, 10) || 12;
     const max_absences = parseInt(inpAbsences.value, 10) || 2;
-    const is_prerequisite = chkPrereq.checked;
+    const prereqVal = inpPrereq ? inpPrereq.value.trim() : '';
+    const prerequisites = prereqVal ? prereqVal.split(',').map(c => c.trim().toUpperCase()).filter(Boolean) : [];
+    const is_prerequisite = prerequisites.length > 0;
 
     if (!docId) {
         alert("Vui lòng nhập Mã Môn (Doc ID)!\nVí dụ: GAM108 (GAM108) hoặc GAM108");
@@ -463,11 +472,15 @@ async function handleAddSubject() {
             learning_mode: learning_mode,
             total_sessions: total_sessions,
             max_absences: max_absences,
+            prerequisites: prerequisites,
             is_prerequisite: is_prerequisite
         };
 
         // Lưu vào Firestore
         await setDoc(doc(db, "Subjects", docId), newSubjectData);
+
+        // Xóa cache danh mục môn học
+        StorageCache.removeLocal(SubjectService.CACHE_KEY);
 
         newSubjectData.docId = docId;
         allSubjects.push(newSubjectData);
@@ -479,7 +492,7 @@ async function handleAddSubject() {
         inpMajor.value = '';
         inpSessions.value = '';
         inpAbsences.value = '';
-        chkPrereq.checked = false;
+        if (inpPrereq) inpPrereq.value = '';
 
         // Render lại bảng
         renderSubjects(allSubjects);
@@ -505,6 +518,8 @@ async function handleDeleteSubject(docId, courseName) {
 
     try {
         await deleteDoc(doc(db, "Subjects", docId));
+        StorageCache.removeLocal(SubjectService.CACHE_KEY);
+
         allSubjects = allSubjects.filter(s => s.docId !== docId);
         dirtyRows.delete(docId);
         
@@ -539,7 +554,11 @@ async function handleSaveAll() {
                 const learning_mode = tr.querySelector('.inp-learning_mode').value;
                 const total_sessions = parseInt(tr.querySelector('.inp-total_sessions').value, 10) || 12;
                 const max_absences = parseInt(tr.querySelector('.inp-max_absences').value, 10) || 2;
-                const is_prerequisite = tr.querySelector('.inp-is_prerequisite').checked;
+                
+                const inpPrereq = tr.querySelector('.inp-prerequisites');
+                const prereqVal = inpPrereq ? inpPrereq.value.trim() : '';
+                const prerequisites = prereqVal ? prereqVal.split(',').map(c => c.trim().toUpperCase()).filter(Boolean) : [];
+                const is_prerequisite = prerequisites.length > 0;
 
                 const docRef = doc(db, "Subjects", docId);
                 batch.set(docRef, {
@@ -548,6 +567,7 @@ async function handleSaveAll() {
                     learning_mode,
                     total_sessions,
                     max_absences,
+                    prerequisites,
                     is_prerequisite
                 }, { merge: true });
 
@@ -559,12 +579,16 @@ async function handleSaveAll() {
                     localSub.learning_mode = learning_mode;
                     localSub.total_sessions = total_sessions;
                     localSub.max_absences = max_absences;
+                    localSub.prerequisites = prerequisites;
                     localSub.is_prerequisite = is_prerequisite;
                 }
             }
         });
 
         await batch.commit();
+
+        // Xóa cache danh mục môn học
+        StorageCache.removeLocal(SubjectService.CACHE_KEY);
 
         // Xóa dirty state trên DOM
         tbody.querySelectorAll('.row-dirty').forEach(tr => tr.classList.remove('row-dirty'));
@@ -579,6 +603,7 @@ async function handleSaveAll() {
         updateSaveAllButtonState();
     }
 }
+
 
 /**
  * Tìm kiếm Môn học Tức thì
@@ -612,22 +637,22 @@ function downloadTemplate() {
 
     const templateData = [
         {
-            "Mã Môn": "GAM108 (GAM108)",
-            "Tên Môn Học": "Dự án mẫu (Lập trình Game)",
-            "Chuyên Ngành": "LTGame, LTWeb",
-            "Hình Thức": "Traditional",
-            "Tổng Buổi": 12,
+            "Mã Môn (Doc ID)": "GAM104 (GAM104)",
+            "Tên Môn Học": "Lập trình C# nâng cao",
+            "Chuyên Ngành": "LTGame",
+            "Hình Thức Học": "Traditional",
+            "Tổng Số Buổi": 12,
             "Vắng Tối Đa": 2,
-            "Tiên Quyết": "Có"
+            "Môn Tiên Quyết": "GAM103, PRO101"
         },
         {
-            "Mã Môn": "COM1071 (COM107)",
+            "Mã Môn (Doc ID)": "COM1071 (COM107)",
             "Tên Môn Học": "Tin học cơ sở",
             "Chuyên Ngành": "Toàn trường",
-            "Hình Thức": "Blended",
-            "Tổng Buổi": 16,
+            "Hình Thức Học": "Blended",
+            "Tổng Số Buổi": 16,
             "Vắng Tối Đa": 3,
-            "Tiên Quyết": "Không"
+            "Môn Tiên Quyết": ""
         }
     ];
 
@@ -651,21 +676,29 @@ function exportExcel() {
         return;
     }
 
-    const exportData = allSubjects.map(s => ({
-        "Mã Môn (Doc ID)": s.docId,
-        "Tên Môn Học": s.course_name || '',
-        "Chuyên Ngành": s.major || '',
-        "Hình Thức Học": s.learning_mode || 'Traditional',
-        "Tổng Số Buổi": s.total_sessions !== undefined ? s.total_sessions : 12,
-        "Vắng Tối Đa": s.max_absences !== undefined ? s.max_absences : 2,
-        "Môn Tiên Quyết": s.is_prerequisite ? "Có" : "Không"
-    }));
+    const exportData = allSubjects.map(s => {
+        const prereqs = Array.isArray(s.prerequisites) ? s.prerequisites.join(', ') : (s.prerequisites || '');
+        return {
+            "Mã Môn (Doc ID)": s.docId,
+            "Tên Môn Học": s.course_name || '',
+            "Chuyên Ngành": s.major || '',
+            "Hình Thức Học": s.learning_mode || 'Traditional',
+            "Tổng Số Buổi": s.total_sessions !== undefined ? s.total_sessions : 12,
+            "Vắng Tối Đa": s.max_absences !== undefined ? s.max_absences : 2,
+            "Môn Tiên Quyết": prereqs
+        };
+    });
 
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Danh_Sach_Mon_Hoc");
-    XLSX.writeFile(wb, `Danh_Muc_Mon_Hoc_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    try {
+        exportToExcel(`Danh_Muc_Mon_Hoc_${new Date().toISOString().slice(0, 10)}.xlsx`, [
+            { sheetName: "Danh_Sach_Mon_Hoc", data: exportData }
+        ]);
+        showToast("Xuất file Excel thành công!", "success");
+    } catch (e) {
+        showToast("Lỗi khi xuất Excel: " + e.message, "error");
+    }
 }
+
 
 /**
  * Nhập Danh sách Môn học từ Excel
@@ -706,8 +739,10 @@ function handleImportExcel(e) {
                 const learning_mode = (row["Hình Thức"] || row["Hình Thức Học"] || row["learning_mode"] || 'Traditional').toString().trim();
                 const total_sessions = parseInt(row["Tổng Buổi"] || row["Tổng Số Buổi"] || row["total_sessions"], 10) || 12;
                 const max_absences = parseInt(row["Vắng Tối Đa"] || row["max_absences"], 10) || 2;
-                const prereqRaw = (row["Tiên Quyết"] || row["Môn Tiên Quyết"] || row["is_prerequisite"] || '').toString().toLowerCase();
-                const is_prerequisite = prereqRaw === 'có' || prereqRaw === 'yes' || prereqRaw === 'true' || prereqRaw === '1';
+                
+                const prereqRaw = (row["Môn Tiên Quyết"] || row["Tiên Quyết"] || row["prerequisites"] || '').toString().trim();
+                const prerequisites = prereqRaw ? prereqRaw.split(',').map(c => c.trim().toUpperCase()).filter(Boolean) : [];
+                const is_prerequisite = prerequisites.length > 0;
 
                 if (docId && course_name) {
                     const docRef = doc(db, "Subjects", docId);
@@ -717,6 +752,7 @@ function handleImportExcel(e) {
                         learning_mode,
                         total_sessions,
                         max_absences,
+                        prerequisites,
                         is_prerequisite
                     }, { merge: true });
                     count++;
@@ -724,6 +760,10 @@ function handleImportExcel(e) {
             });
 
             await batch.commit();
+
+            // Xóa cache danh mục
+            StorageCache.removeLocal(SubjectService.CACHE_KEY);
+
             alert(`🎉 Đã nhập thành công ${count} môn học từ file Excel!`);
             await loadSubjects();
 
@@ -736,3 +776,4 @@ function handleImportExcel(e) {
     };
     reader.readAsArrayBuffer(file);
 }
+

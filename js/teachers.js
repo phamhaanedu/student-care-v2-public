@@ -1,5 +1,8 @@
 import { db, collection, getDocs, doc, setDoc, query, limit, startAfter, writeBatch, Timestamp, orderBy } from './firebase-init.js';
 import { checkAuth } from './auth.js';
+import { SYSTEM_ROLES } from './constants/index.js';
+import { showToast } from './utils/toast.js';
+import { exportToExcel } from './utils/excel-exporter.js';
 
 let allTeachers = []; // Mảng chứa dữ liệu giáo viên đã load
 let dirtyRows = new Set(); // Chứa danh sách docId bị sửa
@@ -15,11 +18,11 @@ let currentSession = null;
 // Chờ DOM load
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Kiểm tra xác thực (Chỉ Admin/Super Admin mới được vào)
-    currentSession = await checkAuth(['Admin', 'Super Admin']);
+    currentSession = await checkAuth([SYSTEM_ROLES.ADMIN, SYSTEM_ROLES.SUPER_ADMIN]);
     if (!currentSession) return;
 
     // Khóa trường phân quyền ở dòng thêm mới nếu không phải Super Admin
-    const isSuperAdmin = currentSession.role === 'Super Admin';
+    const isSuperAdmin = currentSession.role === SYSTEM_ROLES.SUPER_ADMIN;
     if (!isSuperAdmin) {
         const newSysRole = document.getElementById('new_system_role');
         if (newSysRole) {
@@ -28,6 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             newSysRole.style.backgroundColor = "#f1f3f5";
             newSysRole.style.cursor = "not-allowed";
         }
+
     }
 
     // 2. Load dữ liệu ban đầu
