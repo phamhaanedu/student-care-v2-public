@@ -5,6 +5,25 @@ import { StorageCache } from '../utils/storage-cache.js';
 
 export class AcademicService {
     /**
+     * Tự động xác định trạng thái lớp học theo thời gian thực (Real-time Dynamic Status):
+     * - Nếu hôm nay < start_date: 'Upcoming' (Chưa học/Sắp tới)
+     * - Nếu hôm nay > end_date: 'Completed' (Đã hoàn thành)
+     * - Nếu start_date <= hôm nay <= end_date: 'Ongoing' (Đang học)
+     * @param {Object} data
+     * @returns {string} 'Upcoming' | 'Ongoing' | 'Completed'
+     */
+    static resolveClassStatus(data) {
+        if (!data) return 'Ongoing';
+        if (data.start_date && data.end_date) {
+            const today = new Date().toISOString().split('T')[0];
+            if (today < data.start_date) return 'Upcoming';
+            if (today > data.end_date) return 'Completed';
+            return 'Ongoing';
+        }
+        return data.class_status || 'Ongoing';
+    }
+
+    /**
      * Tải toàn bộ AcademicRecords của một kỳ học (có Session Caching)
      * @param {string} semester
      * @param {string} currentTeacherId Mã GV của user đang đăng nhập để xác định is_assigned / is_teaching
@@ -49,7 +68,7 @@ export class AcademicService {
                 is_assigned: isAssigned,
                 is_teaching: isTeaching,
                 block: data.block || 'Block 1',
-                class_status: data.class_status || 'Ongoing'
+                class_status: AcademicService.resolveClassStatus(data)
             };
         });
 
@@ -130,7 +149,7 @@ export class AcademicService {
                     is_assigned: isAssigned,
                     is_teaching: isTeaching,
                     block: data.block || 'Block 1',
-                    class_status: data.class_status || 'Ongoing'
+                    class_status: AcademicService.resolveClassStatus(data)
                 });
             }
         };

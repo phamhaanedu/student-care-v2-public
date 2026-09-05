@@ -95,6 +95,16 @@
     box-shadow: 0 0 0 2px rgba(111, 66, 193, 0.1);
 }
 
+.table-subjects td input[type="checkbox"].checkbox-prereq {
+    width: 20px !important;
+    height: 20px !important;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+    vertical-align: middle;
+    margin: 0 auto;
+    display: inline-block;
+}
+
 /* Dòng nhập liệu thêm mới (Add Row) */
 .row-add {
     background-color: rgba(111, 66, 193, 0.04);

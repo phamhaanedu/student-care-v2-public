@@ -362,8 +362,15 @@ export class AccordionWorkspaceComponent {
             const sub = SubjectService.findSubjectData(rawCode) || (subjectsCache ? subjectsCache.get(rawCode) : null);
             const courseName = sub && sub.course_name ? sub.course_name : '';
 
-            const isDirectPrereq = currentPrereqs.includes(rawCode);
-            const isRecent = recentDebts.includes(rawCode);
+            const cleanDebtCode = rawCode.split(' ')[0].split('(')[0].trim().toUpperCase();
+            const isDirectPrereq = currentPrereqs.some(p => {
+                const cleanP = p.split(' ')[0].split('(')[0].trim().toUpperCase();
+                return cleanP === cleanDebtCode || p === rawCode;
+            });
+            const isRecent = recentDebts.some(r => {
+                const cleanR = (r || '').split(' ')[0].split('(')[0].trim().toUpperCase();
+                return cleanR === cleanDebtCode || r === rawCode;
+            });
             const isGeneralPrereq = sub && sub.is_prerequisite;
 
             if (isDirectPrereq) {

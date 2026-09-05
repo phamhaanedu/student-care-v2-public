@@ -122,9 +122,17 @@
                         </select>
                     </div>
 
-                    <!-- Lọc theo GV (chỉ hiện khi Admin xem) -->
+                    <!-- Lọc theo GV Giảng dạy (Đứng lớp) (chỉ hiện khi Admin xem) -->
+                    <div class="filter-item" id="filterItemTeachingTeacher" style="display: none;">
+                        <label for="selectTeachingTeacherFilter" class="filter-label">👨‍🏫 GV Giảng dạy</label>
+                        <select id="selectTeachingTeacherFilter" class="filter-select">
+                            <option value="all">Tất cả GV Giảng dạy</option>
+                        </select>
+                    </div>
+
+                    <!-- Lọc theo GV Chăm sóc (chỉ hiện khi Admin xem) -->
                     <div class="filter-item" id="filterItemTeacher" style="display: none;">
-                        <label for="selectTeacherFilter" class="filter-label">👨‍🏫 Giảng viên CS</label>
+                        <label for="selectTeacherFilter" class="filter-label">🎯 Giảng viên CS</label>
                         <select id="selectTeacherFilter" class="filter-select">
                             <option value="all">Tất cả Giảng viên CS</option>
                         </select>

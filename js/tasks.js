@@ -45,6 +45,8 @@ const selectBlockFilter = document.getElementById('selectBlockFilter');
 const selectClassStatusFilter = document.getElementById('selectClassStatusFilter');
 const selectAbsenceFilter = document.getElementById('selectAbsenceFilter');
 const selectClassFilter = document.getElementById('selectClassFilter');
+const selectTeachingTeacherFilter = document.getElementById('selectTeachingTeacherFilter');
+const filterItemTeachingTeacher = document.getElementById('filterItemTeachingTeacher');
 const selectTeacherFilter = document.getElementById('selectTeacherFilter');
 const filterItemTeacher = document.getElementById('filterItemTeacher');
 const selectContactStatusFilter = document.getElementById('selectContactStatusFilter');
@@ -112,6 +114,7 @@ function setupEventListeners() {
     if (selectBlockFilter) selectBlockFilter.addEventListener('change', onScopeOrTeacherChange);
     if (selectClassStatusFilter) selectClassStatusFilter.addEventListener('change', onScopeOrTeacherChange);
     if (selectAbsenceFilter) selectAbsenceFilter.addEventListener('change', onScopeOrTeacherChange);
+    if (selectTeachingTeacherFilter) selectTeachingTeacherFilter.addEventListener('change', onScopeOrTeacherChange);
     if (selectTeacherFilter) selectTeacherFilter.addEventListener('change', onScopeOrTeacherChange);
     if (selectClassFilter) selectClassFilter.addEventListener('change', applyFilters);
     if (selectContactStatusFilter) selectContactStatusFilter.addEventListener('change', applyFilters);
@@ -215,6 +218,7 @@ function setupEventListeners() {
             if (selectAbsenceFilter) selectAbsenceFilter.value = 'all';
             if (selectContactStatusFilter) selectContactStatusFilter.value = 'all';
             if (selectCareStatusFilter) selectCareStatusFilter.value = 'all';
+            if (selectTeachingTeacherFilter) selectTeachingTeacherFilter.value = 'all';
             if (selectTeacherFilter) selectTeacherFilter.value = 'all';
 
             selectedRowIds.clear();
@@ -356,30 +360,55 @@ async function loadTasks(forceRefresh = false) {
 }
 
 /**
- * Khởi tạo Dropdown Giảng viên chăm sóc cho Admin / Super Admin
+ * Khởi tạo Dropdown Giảng viên giảng dạy & Giảng viên chăm sóc cho Admin / Super Admin
  */
 function setupTeacherFilterDropdown() {
     const isTeacher = currentSession.role === SYSTEM_ROLES.TEACHER;
     if (isTeacher) {
+        if (filterItemTeachingTeacher) filterItemTeachingTeacher.style.display = 'none';
         if (filterItemTeacher) filterItemTeacher.style.display = 'none';
         if (thTeacher) thTeacher.style.display = 'none';
         return;
     }
 
+    if (filterItemTeachingTeacher) filterItemTeachingTeacher.style.display = 'flex';
     if (filterItemTeacher) filterItemTeacher.style.display = 'flex';
     if (thTeacher) thTeacher.style.display = '';
 
-    if (!selectTeacherFilter) return;
+    // 1. Dropdown GV Giảng Dạy (Standing Teacher / Instructor)
+    if (selectTeachingTeacherFilter) {
+        const currentTeachingVal = selectTeachingTeacherFilter.value || 'all';
+        const teachingSet = new Set();
+        allTasks.forEach(r => {
+            if (r.teacher_id) teachingSet.add(r.teacher_id.trim());
+            if (Array.isArray(r.teacher_ids)) {
+                r.teacher_ids.forEach(t => { if (t) teachingSet.add(t.trim()); });
+            }
+        });
 
-    let html = `<option value="all">👨‍🏫 Tất cả Giảng viên</option>`;
-    html += `<option value="unassigned">⚠️ Chưa phân công</option>`;
+        let teachingHtml = `<option value="all">👨‍🏫 Tất cả GV Giảng dạy (${teachingSet.size})</option>`;
+        Array.from(teachingSet).sort().forEach(tId => {
+            const tInfo = teachersCache.get(tId) || teachersCache.get(tId.toLowerCase()) || {};
+            const tName = tInfo.full_name || tInfo.name || '';
+            const label = tName ? `${tId} - ${tName}` : tId;
+            teachingHtml += `<option value="${tId}" ${tId === currentTeachingVal ? 'selected' : ''}>👨‍🏫 ${label}</option>`;
+        });
+        selectTeachingTeacherFilter.innerHTML = teachingHtml;
+    }
 
-    teachersCache.forEach((t, tid) => {
-        const name = t.name || t.full_name || tid;
-        html += `<option value="${tid}">👨‍🏫 ${tid} - ${name}</option>`;
-    });
+    // 2. Dropdown GV Chăm Sóc (Caregiver)
+    if (selectTeacherFilter) {
+        const currentCaregiverVal = selectTeacherFilter.value || 'all';
+        let html = `<option value="all">🎯 Tất cả Giảng viên CS</option>`;
+        html += `<option value="unassigned" ${currentCaregiverVal === 'unassigned' ? 'selected' : ''}>⚠️ Chưa phân công</option>`;
 
-    selectTeacherFilter.innerHTML = html;
+        teachersCache.forEach((t, tid) => {
+            const name = t.name || t.full_name || tid;
+            html += `<option value="${tid}" ${tid === currentCaregiverVal ? 'selected' : ''}>🎯 ${tid} - ${name}</option>`;
+        });
+
+        selectTeacherFilter.innerHTML = html;
+    }
 }
 
 /**
@@ -392,6 +421,7 @@ function updateCascadingClassDropdown() {
     const blockVal = selectBlockFilter ? selectBlockFilter.value : 'all';
     const classStatusVal = selectClassStatusFilter ? selectClassStatusFilter.value : 'all';
     const absenceVal = selectAbsenceFilter ? selectAbsenceFilter.value : 'all';
+    const teachingTeacherVal = selectTeachingTeacherFilter ? selectTeachingTeacherFilter.value : 'all';
     const teacherVal = selectTeacherFilter ? selectTeacherFilter.value : 'all';
 
     const currentSelected = selectClassFilter.value;
@@ -410,6 +440,17 @@ function updateCascadingClassDropdown() {
         if (absenceVal === '3' && totalAbs !== 3) return;
         if (absenceVal === 'gte4' && totalAbs < 4) return;
 
+        // Lọc theo GV Giảng dạy
+        if (teachingTeacherVal !== 'all') {
+            const tTeaching = (item.teacher_id || '').toLowerCase().trim();
+            const tTeachingList = Array.isArray(item.teacher_ids) 
+                ? item.teacher_ids.map(t => (t || '').toLowerCase().trim()) 
+                : [];
+            const target = teachingTeacherVal.toLowerCase().trim();
+            if (tTeaching !== target && !tTeachingList.includes(target)) return;
+        }
+
+        // Lọc theo GV Chăm sóc
         if (teacherVal === 'unassigned' && item.caregiver_id) return;
         if (teacherVal !== 'all' && teacherVal !== 'unassigned' && (item.caregiver_id || '').toLowerCase() !== teacherVal.toLowerCase()) return;
 
@@ -490,7 +531,18 @@ function applyFilters() {
             if (itemClassKey !== classVal) return false;
         }
 
-        // 6. Giảng viên chăm sóc (Admin filter)
+        // 6a. Giảng viên giảng dạy (Admin filter)
+        const teachingTeacherVal = selectTeachingTeacherFilter ? selectTeachingTeacherFilter.value : 'all';
+        if (teachingTeacherVal !== 'all') {
+            const tTeaching = (item.teacher_id || '').toLowerCase().trim();
+            const tTeachingList = Array.isArray(item.teacher_ids) 
+                ? item.teacher_ids.map(t => (t || '').toLowerCase().trim()) 
+                : [];
+            const target = teachingTeacherVal.toLowerCase().trim();
+            if (tTeaching !== target && !tTeachingList.includes(target)) return false;
+        }
+
+        // 6b. Giảng viên chăm sóc (Admin filter)
         if (teacherVal === 'unassigned' && item.caregiver_id) return false;
         if (teacherVal !== 'all' && teacherVal !== 'unassigned' && (item.caregiver_id || '').toLowerCase() !== teacherVal.toLowerCase()) return false;
 

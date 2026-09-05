@@ -17,7 +17,7 @@ let currentSemester = ''; // Kỳ học hiện tại
 let missingSubjectsCache = []; // Danh sách môn thiếu sau khi quét
 
 // DOM Elements
-let tbody, loadingRow, inpSearchSubject, subjectCountBadge, btnSaveAll, txtCurrentSemester, btnScanMissing;
+let tbody, loadingRow, inpSearchSubject, subjectCountBadge, btnSaveAll, txtCurrentSemester, btnScanMissing, selectScanSemester;
 let modalScanMissing, modalSemester, missingSubjectsList, btnCloseModalScan, btnAddAllMissing;
 
 function getDOMElements() {
@@ -28,6 +28,7 @@ function getDOMElements() {
     btnSaveAll = document.getElementById('btnSaveAll');
     txtCurrentSemester = document.getElementById('txtCurrentSemester');
     btnScanMissing = document.getElementById('btnScanMissing');
+    selectScanSemester = document.getElementById('selectScanSemester');
 
     // Modal elements
     modalScanMissing = document.getElementById('modalScanMissing');
@@ -62,6 +63,7 @@ async function init() {
         if (btnAdd) btnAdd.addEventListener('click', handleAddSubject);
         if (btnSaveAll) btnSaveAll.addEventListener('click', handleSaveAll);
         if (inpSearchSubject) inpSearchSubject.addEventListener('input', handleSearch);
+        if (selectScanSemester) selectScanSemester.addEventListener('change', updateScanButtonText);
         if (btnScanMissing) btnScanMissing.addEventListener('click', handleScanMissing);
 
         // Sự kiện Modal Quét
@@ -89,17 +91,35 @@ if (document.readyState === 'loading') {
 }
 
 /**
- * Tải kỳ học hiện tại từ Configuration/Global
+ * Tải kỳ học hiện tại & Danh sách kỳ từ Configuration/Global
  */
 async function loadCurrentSemester() {
     try {
         const config = await SemesterService.getGlobalConfig();
         currentSemester = config.current_semester || '';
-        if (txtCurrentSemester) {
-            txtCurrentSemester.textContent = currentSemester || 'Chưa cấu hình kỳ';
+
+        // Đổ danh sách kỳ vào Dropdown Quét Môn
+        if (selectScanSemester && config.sorted_semesters) {
+            selectScanSemester.innerHTML = config.sorted_semesters.map(sem => {
+                const isCurrent = (sem === currentSemester);
+                const label = isCurrent ? `📅 ${sem} (Hiện tại)` : `📅 ${sem}`;
+                return `<option value="${sem}" ${isCurrent ? 'selected' : ''}>${label}</option>`;
+            }).join('');
         }
+
+        updateScanButtonText();
     } catch (e) {
         console.error("Lỗi khi đọc current_semester:", e);
+    }
+}
+
+/**
+ * Cập nhật nhãn của nút quét theo kỳ đang được chọn
+ */
+function updateScanButtonText() {
+    const targetSem = selectScanSemester ? selectScanSemester.value : currentSemester;
+    if (txtCurrentSemester) {
+        txtCurrentSemester.textContent = targetSem || currentSemester || '...';
     }
 }
 
@@ -169,9 +189,7 @@ function renderSubjects(subjectsList) {
         const totalSessions = s.total_sessions !== undefined ? s.total_sessions : 12;
         const maxAbsences = s.max_absences !== undefined ? s.max_absences : 2;
         const learningMode = s.learning_mode || 'Traditional';
-        const prereqStr = Array.isArray(s.prerequisites) 
-            ? s.prerequisites.join(', ') 
-            : (s.prerequisites || (s.is_prerequisite ? 'Tiên quyết' : ''));
+        const isPrereq = s.is_prerequisite === true;
 
         tr.innerHTML = `
             <td data-label="Mã Môn">
@@ -196,8 +214,8 @@ function renderSubjects(subjectsList) {
             <td data-label="Vắng Tối Đa" class="text-center">
                 <input type="number" class="inp-field inp-max_absences" value="${maxAbsences}" min="0" max="20" style="text-align: center;">
             </td>
-            <td data-label="⚡ Môn Tiên Quyết">
-                <input type="text" class="inp-field inp-prerequisites" value="${prereqStr}" placeholder="VD: GAM101, PRO101" style="font-size: 0.8rem;">
+            <td data-label="⚡ Tiên Quyết" class="text-center">
+                <input type="checkbox" class="inp-field inp-is_prerequisite checkbox-prereq" ${isPrereq ? 'checked' : ''} title="Đánh dấu là Môn Tiên Quyết">
             </td>
             <td data-label="Thao tác" class="text-center">
                 <button class="btn-icon btn-delete" data-id="${s.docId}" title="Xóa môn học này">🗑️</button>
@@ -254,11 +272,12 @@ function updateCountBadge(count) {
 }
 
 /**
- * Xử lý Quét Môn Chưa Có trong Kỳ Hiện Tại (No Full Table Scan - Lọc theo semester)
+ * Xử lý Quét Môn Chưa Có theo Học Kỳ Được Chọn (No Full Table Scan - Lọc theo semester)
  */
 async function handleScanMissing() {
-    if (!currentSemester) {
-        alert("Chưa xác định được kỳ học hiện tại! Vui lòng kiểm tra Configuration/Global.");
+    const targetSemester = selectScanSemester ? selectScanSemester.value : currentSemester;
+    if (!targetSemester) {
+        alert("Chưa chọn học kỳ để quét! Vui lòng kiểm tra Configuration/Global.");
         return;
     }
 
@@ -266,15 +285,15 @@ async function handleScanMissing() {
     btnScanMissing.textContent = "⏳ Đang quét môn...";
 
     try {
-        // 1. Truy vấn AcademicRecords chỉ trong kỳ hiện tại
+        // 1. Truy vấn AcademicRecords chỉ trong kỳ được chọn
         const q = query(
             collection(db, "AcademicRecords"),
-            where("semester", "==", currentSemester)
+            where("semester", "==", targetSemester)
         );
 
         const snap = await getDocs(q);
         if (snap.empty) {
-            alert(`ℹ️ Không có ca học nào trong kỳ "${currentSemester}" để quét!`);
+            alert(`ℹ️ Không có ca học nào trong kỳ "${targetSemester}" để quét!`);
             return;
         }
 
@@ -300,6 +319,9 @@ async function handleScanMissing() {
         missingSubjectsCache = [];
 
         subjectStats.forEach((stat, rawCode) => {
+            // Bỏ qua nếu là Unknown Course
+            if (rawCode.toLowerCase().includes('unknown')) return;
+
             // Kiểm tra xem môn này đã có trong allSubjects chưa
             const baseCode = rawCode.split(' ')[0].split('(')[0].trim().toLowerCase();
             const exists = allSubjects.some(s => {
@@ -319,12 +341,12 @@ async function handleScanMissing() {
 
         // 4. Xử lý kết quả
         if (missingSubjectsCache.length === 0) {
-            alert(`🎉 Tuyệt vời! Toàn bộ ${subjectStats.size} môn học trong kỳ "${currentSemester}" đều ĐÃ ĐƯỢC CẤU HÌNH ĐẦY ĐỦ trong danh mục Subjects.`);
+            alert(`🎉 Tuyệt vời! Toàn bộ ${subjectStats.size} môn học trong kỳ "${targetSemester}" đều ĐÃ ĐƯỢC CẤU HÌNH ĐẦY ĐỦ trong danh mục Subjects.`);
             return;
         }
 
         // 5. Hiển thị Modal Cảnh báo & Thêm nhanh
-        if (modalSemester) modalSemester.textContent = currentSemester;
+        if (modalSemester) modalSemester.textContent = targetSemester;
         renderMissingModalList(missingSubjectsCache);
         if (modalScanMissing) modalScanMissing.style.display = 'flex';
 
@@ -333,7 +355,7 @@ async function handleScanMissing() {
         alert(`❌ Lỗi khi quét môn học: ${e.message}`);
     } finally {
         btnScanMissing.disabled = false;
-        btnScanMissing.innerHTML = `🔍 Quét Môn Chưa Có (<span id="txtCurrentSemester">${currentSemester || '...'}</span>)`;
+        btnScanMissing.innerHTML = `🔍 Quét Môn Chưa Có (<span id="txtCurrentSemester">${targetSemester || '...'}</span>)`;
     }
 }
 
@@ -430,18 +452,17 @@ async function handleAddSubject() {
     const selectMode = document.getElementById('new_learning_mode');
     const inpSessions = document.getElementById('new_total_sessions');
     const inpAbsences = document.getElementById('new_max_absences');
-    const inpPrereq = document.getElementById('new_prerequisites');
+    const inpIsPrereq = document.getElementById('new_is_prerequisite');
     const btnAdd = document.getElementById('btnAddSubject');
 
-    const docId = inpDocId.value.trim();
+    const rawDocId = inpDocId.value.trim();
+    const docId = SubjectService.standardizeCourseCode(rawDocId);
     const course_name = inpName.value.trim();
     const major = inpMajor.value.trim();
     const learning_mode = selectMode.value;
     const total_sessions = parseInt(inpSessions.value, 10) || 12;
     const max_absences = parseInt(inpAbsences.value, 10) || 2;
-    const prereqVal = inpPrereq ? inpPrereq.value.trim() : '';
-    const prerequisites = prereqVal ? prereqVal.split(',').map(c => c.trim().toUpperCase()).filter(Boolean) : [];
-    const is_prerequisite = prerequisites.length > 0;
+    const is_prerequisite = inpIsPrereq ? inpIsPrereq.checked : false;
 
     if (!docId) {
         alert("Vui lòng nhập Mã Môn (Doc ID)!\nVí dụ: GAM108 (GAM108) hoặc GAM108");
@@ -472,7 +493,6 @@ async function handleAddSubject() {
             learning_mode: learning_mode,
             total_sessions: total_sessions,
             max_absences: max_absences,
-            prerequisites: prerequisites,
             is_prerequisite: is_prerequisite
         };
 
@@ -492,7 +512,7 @@ async function handleAddSubject() {
         inpMajor.value = '';
         inpSessions.value = '';
         inpAbsences.value = '';
-        if (inpPrereq) inpPrereq.value = '';
+        if (inpIsPrereq) inpIsPrereq.checked = false;
 
         // Render lại bảng
         renderSubjects(allSubjects);
@@ -555,10 +575,8 @@ async function handleSaveAll() {
                 const total_sessions = parseInt(tr.querySelector('.inp-total_sessions').value, 10) || 12;
                 const max_absences = parseInt(tr.querySelector('.inp-max_absences').value, 10) || 2;
                 
-                const inpPrereq = tr.querySelector('.inp-prerequisites');
-                const prereqVal = inpPrereq ? inpPrereq.value.trim() : '';
-                const prerequisites = prereqVal ? prereqVal.split(',').map(c => c.trim().toUpperCase()).filter(Boolean) : [];
-                const is_prerequisite = prerequisites.length > 0;
+                const inpIsPrereq = tr.querySelector('.inp-is_prerequisite');
+                const is_prerequisite = inpIsPrereq ? inpIsPrereq.checked : false;
 
                 const docRef = doc(db, "Subjects", docId);
                 batch.set(docRef, {
@@ -567,7 +585,6 @@ async function handleSaveAll() {
                     learning_mode,
                     total_sessions,
                     max_absences,
-                    prerequisites,
                     is_prerequisite
                 }, { merge: true });
 
@@ -579,7 +596,6 @@ async function handleSaveAll() {
                     localSub.learning_mode = learning_mode;
                     localSub.total_sessions = total_sessions;
                     localSub.max_absences = max_absences;
-                    localSub.prerequisites = prerequisites;
                     localSub.is_prerequisite = is_prerequisite;
                 }
             }
@@ -643,7 +659,7 @@ function downloadTemplate() {
             "Hình Thức Học": "Traditional",
             "Tổng Số Buổi": 12,
             "Vắng Tối Đa": 2,
-            "Môn Tiên Quyết": "GAM103, PRO101"
+            "Môn Tiên Quyết (Có/Không)": "Có"
         },
         {
             "Mã Môn (Doc ID)": "COM1071 (COM107)",
@@ -652,7 +668,7 @@ function downloadTemplate() {
             "Hình Thức Học": "Blended",
             "Tổng Số Buổi": 16,
             "Vắng Tối Đa": 3,
-            "Môn Tiên Quyết": ""
+            "Môn Tiên Quyết (Có/Không)": "Không"
         }
     ];
 
@@ -677,7 +693,6 @@ function exportExcel() {
     }
 
     const exportData = allSubjects.map(s => {
-        const prereqs = Array.isArray(s.prerequisites) ? s.prerequisites.join(', ') : (s.prerequisites || '');
         return {
             "Mã Môn (Doc ID)": s.docId,
             "Tên Môn Học": s.course_name || '',
@@ -685,7 +700,7 @@ function exportExcel() {
             "Hình Thức Học": s.learning_mode || 'Traditional',
             "Tổng Số Buổi": s.total_sessions !== undefined ? s.total_sessions : 12,
             "Vắng Tối Đa": s.max_absences !== undefined ? s.max_absences : 2,
-            "Môn Tiên Quyết": prereqs
+            "Môn Tiên Quyết (Có/Không)": s.is_prerequisite ? "Có" : "Không"
         };
     });
 
@@ -733,16 +748,16 @@ function handleImportExcel(e) {
             let count = 0;
 
             jsonData.forEach(row => {
-                const docId = (row["Mã Môn"] || row["Mã Môn (Doc ID)"] || row["docId"] || '').toString().trim();
+                const rawDocId = (row["Mã Môn"] || row["Mã Môn (Doc ID)"] || row["docId"] || '').toString().trim();
+                const docId = SubjectService.standardizeCourseCode(rawDocId);
                 const course_name = (row["Tên Môn Học"] || row["course_name"] || '').toString().trim();
                 const major = (row["Chuyên Ngành"] || row["major"] || '').toString().trim();
                 const learning_mode = (row["Hình Thức"] || row["Hình Thức Học"] || row["learning_mode"] || 'Traditional').toString().trim();
                 const total_sessions = parseInt(row["Tổng Buổi"] || row["Tổng Số Buổi"] || row["total_sessions"], 10) || 12;
                 const max_absences = parseInt(row["Vắng Tối Đa"] || row["max_absences"], 10) || 2;
                 
-                const prereqRaw = (row["Môn Tiên Quyết"] || row["Tiên Quyết"] || row["prerequisites"] || '').toString().trim();
-                const prerequisites = prereqRaw ? prereqRaw.split(',').map(c => c.trim().toUpperCase()).filter(Boolean) : [];
-                const is_prerequisite = prerequisites.length > 0;
+                const prereqRaw = (row["Môn Tiên Quyết (Có/Không)"] || row["Môn Tiên Quyết"] || row["Tiên Quyết"] || row["is_prerequisite"] || '').toString().trim().toLowerCase();
+                const is_prerequisite = ['có', 'co', 'yes', 'true', '1', 'x', 'tiên quyết', 'tien quyet'].includes(prereqRaw);
 
                 if (docId && course_name) {
                     const docRef = doc(db, "Subjects", docId);
@@ -752,7 +767,6 @@ function handleImportExcel(e) {
                         learning_mode,
                         total_sessions,
                         max_absences,
-                        prerequisites,
                         is_prerequisite
                     }, { merge: true });
                     count++;

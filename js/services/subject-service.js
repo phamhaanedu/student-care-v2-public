@@ -55,7 +55,29 @@ export class SubjectService {
     }
 
     /**
-     * Tra cứu thông tin môn học thông minh (hỗ trợ không phân biệt hoa thường, mã môn có ngoặc hoặc không ngoặc)
+     * Chuẩn hóa mã môn học theo định dạng FAP: MÃ_CTĐT (MÃ_GỐC) hoặc MÃ (MÃ)
+     * @param {string} rawCode
+     * @returns {string}
+     */
+    static standardizeCourseCode(rawCode) {
+        if (!rawCode) return '';
+        const clean = rawCode.toString().trim().toUpperCase();
+        if (clean.includes('(') && clean.includes(')')) {
+            return clean;
+        }
+
+        // Bảng ánh xạ các mã môn 4 số sang mã gốc 3 số
+        const match4 = clean.match(/^([A-Z]{3})(\d{3})(\d)$/);
+        if (match4) {
+            return `${clean} (${match4[1]}${match4[2]})`;
+        }
+
+        return `${clean} (${clean})`;
+    }
+
+    /**
+     * Tra cứu thông tin môn học thông minh 2 chiều:
+     * Hỗ trợ tìm theo mã FAP đầy đủ 'WEB2055 (WEB205)', mã CTĐT 'WEB2055', hoặc mã gốc trong transcript 'WEB205'
      * @param {string} courseCode
      * @returns {Object|null}
      */
@@ -63,25 +85,49 @@ export class SubjectService {
         if (!courseCode) return null;
         const cleanCode = courseCode.toString().trim().toUpperCase();
 
-        // 1. Tìm chính xác theo key (hoa/thường)
+        // 1. Khớp chính xác tuyệt đối theo key trong Map
         if (this._subjectsCache.has(cleanCode)) {
             return this._subjectsCache.get(cleanCode);
         }
 
-        // 2. Tìm duyệt cache theo mã môn gốc (trước ngoặc hoặc trong ngoặc)
-        const rawCode = cleanCode.split(' ')[0].split('(')[0].trim();
+        // 2. Trích xuất mã chính (trước ngoặc) và mã gốc (trong ngoặc) của đầu vào
+        const inputMain = cleanCode.split(' ')[0].split('(')[0].trim();
+        const inputMatch = cleanCode.match(/\(([^)]+)\)/);
+        const inputParen = inputMatch ? inputMatch[1].trim() : '';
+
+        // 3. Quét duyệt cache với độ ưu tiên cao dần
+        let fallbackMatch = null;
+
         for (const [key, val] of this._subjectsCache.entries()) {
             const cleanKey = key.toString().trim().toUpperCase();
-            const rawKey = cleanKey.split(' ')[0].split('(')[0].trim();
-            const docId = (val.id || val.docId || '').toString().trim().toUpperCase();
-            const rawDocId = docId.split(' ')[0].split('(')[0].trim();
+            if (cleanKey === cleanCode) return val;
 
-            if (cleanKey === cleanCode || rawKey === rawCode || rawDocId === rawCode || cleanKey.startsWith(rawCode) || cleanCode.startsWith(rawKey)) {
+            const keyMain = cleanKey.split(' ')[0].split('(')[0].trim();
+            const keyMatch = cleanKey.match(/\(([^)]+)\)/);
+            const keyParen = keyMatch ? keyMatch[1].trim() : '';
+
+            // Khớp theo mã gốc trong ngoặc (Ví dụ: nợ môn "WEB205" khớp với "WEB2055 (WEB205)")
+            if (keyParen && (keyParen === cleanCode || keyParen === inputMain || (inputParen && keyParen === inputParen))) {
                 return val;
+            }
+
+            // Khớp theo mã trước ngoặc (Ví dụ: "WEB2055" khớp với "WEB2055 (WEB205)")
+            if (keyMain === cleanCode || keyMain === inputMain) {
+                return val;
+            }
+
+            // Khớp khi đầu vào có ngoặc trỏ tới mã chính
+            if (inputParen && (inputParen === keyMain || inputParen === keyParen)) {
+                return val;
+            }
+
+            // Fallback: Tiền tố bắt đầu giống nhau
+            if (!fallbackMatch && (keyMain.startsWith(inputMain) || inputMain.startsWith(keyMain))) {
+                fallbackMatch = val;
             }
         }
 
-        return null;
+        return fallbackMatch;
     }
 
 
@@ -89,9 +135,10 @@ export class SubjectService {
      * Thêm mới hoặc cập nhật một môn học
      */
     static async saveSubject(subjectId, data) {
-        await setDoc(doc(db, "Subjects", subjectId), data, { merge: true });
-        const updatedItem = { id: subjectId, ...data };
-        this._subjectsCache.set(subjectId, updatedItem);
+        const finalId = this.standardizeCourseCode(subjectId);
+        await setDoc(doc(db, "Subjects", finalId), data, { merge: true });
+        const updatedItem = { id: finalId, ...data };
+        this._subjectsCache.set(finalId, updatedItem);
 
         // Cập nhật lại LocalStorage
         const currentList = Array.from(this._subjectsCache.values());
@@ -110,7 +157,8 @@ export class SubjectService {
             const batch = writeBatch(db);
 
             chunk.forEach(sub => {
-                const subRef = doc(db, "Subjects", sub.id || sub.course_code);
+                const finalId = this.standardizeCourseCode(sub.id || sub.course_code);
+                const subRef = doc(db, "Subjects", finalId);
                 batch.set(subRef, sub, { merge: true });
             });
 
@@ -119,8 +167,8 @@ export class SubjectService {
 
         // Cập nhật lại cache RAM và LocalStorage
         subjectsList.forEach(sub => {
-            const id = sub.id || sub.course_code;
-            this._subjectsCache.set(id, sub);
+            const finalId = this.standardizeCourseCode(sub.id || sub.course_code);
+            this._subjectsCache.set(finalId, { ...sub, id: finalId });
         });
 
         StorageCache.setLocal(this.CACHE_KEY, Array.from(this._subjectsCache.values()));
