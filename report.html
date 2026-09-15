@@ -97,6 +97,9 @@
                         <button class="tab-btn" data-tab="tab-student-details">
                             <span class="tab-icon">📋</span> Danh Sách Chi Tiết
                         </button>
+                        <button class="tab-btn" data-tab="tab-sync-logs">
+                            <span class="tab-icon">📡</span> Hoạt động lấy dữ liệu
+                        </button>
                     </div>
 
                     <!-- TAB 1: BÁO CÁO TIẾN ĐỘ THEO GIẢNG VIÊN -->
@@ -402,6 +405,55 @@
                         </div>
                     </div>
 
+                    <!-- TAB 5: HOẠT ĐỘNG LẤY DỮ LIỆU (SYNC LOGS) -->
+                    <div id="tab-sync-logs" class="tab-pane">
+                        <div style="margin-bottom: 14px;">
+                            <h3 class="tab-title" style="margin-bottom: 4px;">Lịch sử Hoạt động Lấy Dữ liệu (Extension)</h3>
+                            <p class="tab-desc">Theo dõi thời gian chạy tool điểm danh và bảng điểm của các Giảng viên.</p>
+                        </div>
+
+                        <!-- Toolbar Bộ Lọc Lịch Sử -->
+                        <div class="tasks-toolbar-card">
+                            <!-- Bộ lọc Từ ngày -->
+                            <div class="filter-item">
+                                <label for="filterLogStartDate" class="filter-label">📅 Từ ngày</label>
+                                <input type="date" id="filterLogStartDate" class="input-search">
+                            </div>
+
+                            <!-- Bộ lọc Đến ngày -->
+                            <div class="filter-item">
+                                <label for="filterLogEndDate" class="filter-label">📅 Đến ngày</label>
+                                <input type="date" id="filterLogEndDate" class="input-search">
+                            </div>
+
+                            <!-- Nút Tra cứu -->
+                            <div class="filter-item filter-action-item" style="display: flex; align-items: flex-end;">
+                                <button type="button" id="btnSearchSyncLogs" class="btn btn-primary" style="height: 38px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.84rem;">
+                                    <span>🔍 Tra cứu</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Data Table cho Sync Logs -->
+                        <div class="table-responsive">
+                            <table class="table table-report">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 120px;">Ngày</th>
+                                        <th style="width: 150px;">Mã GV</th>
+                                        <th style="width: 250px;">Tên Giảng Viên</th>
+                                        <th style="width: 200px;">Hoạt động gần nhất</th>
+                                        <th>Thời gian chính xác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBodySyncLogs">
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted" style="padding: 30px;">Nhấn "Tra cứu" để xem dữ liệu.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
 
                 </div>
             </div>

@@ -116,6 +116,11 @@ function setupEventListeners() {
             btn.classList.add('active');
             const targetPane = $(targetTabId);
             if (targetPane) targetPane.classList.add('active');
+
+            // Xử lý riêng khi mở tab Sync Logs
+            if (targetTabId === 'tab-sync-logs' && !$('tableBodySyncLogs').dataset.loaded) {
+                initSyncLogsTab();
+            }
         });
     });
 
@@ -225,6 +230,23 @@ function setupEventListeners() {
                 document.body.removeChild(tempTextArea);
                 showToast(`📋 Đã sao chép ${uniqueStudentIds.length} mã SV vào Clipboard!`, "success");
             }
+        });
+    }
+    // Nút tra cứu Sync Logs
+    const btnSearchSyncLogs = $('btnSearchSyncLogs');
+    if (btnSearchSyncLogs) {
+        btnSearchSyncLogs.addEventListener('click', () => {
+            const startDate = $('filterLogStartDate').value;
+            const endDate = $('filterLogEndDate').value;
+            if (!startDate || !endDate) {
+                showToast("Vui lòng chọn đầy đủ Từ ngày và Đến ngày", "warning");
+                return;
+            }
+            if (startDate > endDate) {
+                showToast("Ngày bắt đầu không được lớn hơn ngày kết thúc", "warning");
+                return;
+            }
+            loadSyncLogs(startDate, endDate);
         });
     }
 }
@@ -1472,3 +1494,100 @@ function findSubjectData(courseCode) {
     return SubjectService.findSubjectData(courseCode) || null;
 }
 
+// ==========================================================================
+// 8. XỬ LÝ TAB SYNC LOGS (HOẠT ĐỘNG LẤY DỮ LIỆU)
+// ==========================================================================
+function initSyncLogsTab() {
+    // Đặt ngày mặc định: Từ 7 ngày trước đến hôm nay
+    const today = new Date();
+    const lastWeek = new Date(today);
+    lastWeek.setDate(today.getDate() - 7);
+
+    const fmtDate = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    };
+
+    $('filterLogStartDate').value = fmtDate(lastWeek);
+    $('filterLogEndDate').value = fmtDate(today);
+
+    // Load dữ liệu
+    loadSyncLogs(fmtDate(lastWeek), fmtDate(today));
+    $('tableBodySyncLogs').dataset.loaded = 'true';
+}
+
+async function loadSyncLogs(startDate, endDate) {
+    const tableBody = $('tableBodySyncLogs');
+    tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted" style="padding: 30px;">Đang tải dữ liệu...</td></tr>`;
+
+    try {
+        const logsRef = collection(db, 'SyncLogs');
+        const q = query(
+            logsRef,
+            where('date', '>=', startDate),
+            where('date', '<=', endDate)
+        );
+
+        const querySnapshot = await getDocs(q);
+        const logs = [];
+        querySnapshot.forEach(doc => {
+            logs.push({ id: doc.id, ...doc.data() });
+        });
+
+        if (logs.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted" style="padding: 30px;">Không có hoạt động lấy dữ liệu nào trong khoảng thời gian này.</td></tr>`;
+            return;
+        }
+
+        // Sắp xếp giảm dần theo thời gian (mới nhất lên trên)
+        logs.sort((a, b) => {
+            const timeA = a.last_sync_time ? new Date(a.last_sync_time).getTime() : 0;
+            const timeB = b.last_sync_time ? new Date(b.last_sync_time).getTime() : 0;
+            return timeB - timeA;
+        });
+
+        let html = '';
+        logs.forEach(log => {
+            const teacherData = teachersCache.get(log.teacher_id);
+            const teacherName = teacherData ? teacherData.name : 'Không xác định';
+            
+            // Format ngày
+            const dateStr = log.date || ''; // YYYY-MM-DD
+            
+            // Format thời gian
+            let timeStr = log.last_sync_time || '';
+            if (timeStr) {
+                const d = new Date(timeStr);
+                timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')} ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+            }
+
+            // Badge action
+            let actionBadge = `<span class="badge badge-secondary">${log.latest_action || 'Không rõ'}</span>`;
+            if (log.latest_action === 'upsert-attendance') {
+                actionBadge = `<span class="badge badge-info">Điểm danh</span>`;
+            } else if (log.latest_action === 'upsert-transcript') {
+                actionBadge = `<span class="badge badge-warning">Bảng điểm nợ môn</span>`;
+            }
+
+            html += `
+                <tr>
+                    <td class="font-weight-500">${dateStr}</td>
+                    <td><code>${log.teacher_id}</code></td>
+                    <td class="font-weight-500">${teacherName}</td>
+                    <td>${actionBadge}</td>
+                    <td class="text-muted" style="font-size: 0.85rem;">${timeStr}</td>
+                </tr>
+            `;
+        });
+
+        tableBody.innerHTML = html;
+        showToast(`Đã tải ${logs.length} bản ghi log.`, "success");
+
+    } catch (error) {
+        console.error("Lỗi khi tải SyncLogs:", error);
+        tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger" style="padding: 30px;">Lỗi tải dữ liệu: ${error.message}</td></tr>`;
+        showToast("Lỗi khi tải dữ liệu SyncLogs", "error");
+    }
+}
