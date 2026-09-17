@@ -640,6 +640,25 @@
     border-color: #cbd5e1;
 }
 
+/* Delete Button */
+.btn-delete-class {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 6px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+}
+
+.btn-delete-class:hover {
+    background: #fee2e2;
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+
 /* Badges */
 .badge-block {
     display: inline-block;

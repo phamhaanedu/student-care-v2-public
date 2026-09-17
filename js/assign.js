@@ -469,7 +469,7 @@ function renderModalClassesTable() {
     });
 
     if (filtered.length === 0) {
-        modalClassesTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted" style="padding: 25px;">Không tìm thấy lớp nào phù hợp.</td></tr>`;
+        modalClassesTableBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted" style="padding: 25px;">Không tìm thấy lớp nào phù hợp.</td></tr>`;
         updateModalSummary(modalClassesList);
         return;
     }
@@ -496,6 +496,9 @@ function renderModalClassesTable() {
                         <option value="Completed" ${c.class_status === 'Completed' ? 'selected' : ''}>🏁 Đã hoàn thành</option>
                     </select>
                 </td>
+                <td class="text-center">
+                    <button class="btn-delete-class" data-key="${c.key}" title="Xóa lớp bị hủy khỏi hệ thống">🗑️</button>
+                </td>
             </tr>
         `;
     });
@@ -514,6 +517,15 @@ function renderModalClassesTable() {
             if (targetObj) targetObj.class_status = newStatus;
 
             updateModalSummary(modalClassesList);
+        });
+    });
+
+    // Gắn sự kiện nút xóa lớp
+    const deleteBtns = modalClassesTableBody.querySelectorAll('.btn-delete-class');
+    deleteBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const key = e.target.closest('.btn-delete-class').dataset.key;
+            handleDeleteClass(key);
         });
     });
 
@@ -630,6 +642,63 @@ async function handleSaveClassLifecycle() {
     } finally {
         btnSaveClassLifecycle.disabled = false;
         btnSaveClassLifecycle.textContent = "💾 Lưu Trạng Thái Lớp";
+    }
+}
+
+/**
+ * Xóa lớp học bị hủy khỏi hệ thống
+ * Xóa toàn bộ sinh viên của lớp khỏi AcademicRecords và xóa class khỏi Classes.
+ */
+async function handleDeleteClass(classKey) {
+    const classObj = modalClassesList.find(c => c.key === classKey);
+    if (!classObj) return;
+
+    const confirmMsg = `⚠️ CẢNH BÁO NGUY HIỂM ⚠️\n\nBạn có chắc chắn muốn XÓA VĨNH VIỄN lớp ${classObj.class_name} (${classObj.course_code}) khỏi hệ thống?\n\nThao tác này sẽ XÓA TOÀN BỘ danh sách sinh viên của lớp này và KHÔNG THỂ PHỤC HỒI.`;
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        const batch = writeBatch(db);
+        
+        // 1. Tìm tất cả các record thuộc lớp này trong AcademicRecords
+        const qRecords = query(
+            collection(db, 'AcademicRecords'),
+            where('semester', '==', currentSemester),
+            where('class_id', '==', classObj.class_id || classObj.class_name),
+            where('course_code', '==', classObj.course_code)
+        );
+        const snapshot = await getDocs(qRecords);
+        let countRecords = 0;
+        snapshot.forEach(docSnap => {
+            batch.delete(docSnap.ref);
+            countRecords++;
+        });
+
+        // 2. Tìm tất cả CareLogs thuộc lớp này
+        const qLogs = query(
+            collection(db, 'CareLogs'),
+            where('semester', '==', currentSemester),
+            where('class_id', '==', classObj.class_id || classObj.class_name),
+            where('course_code', '==', classObj.course_code)
+        );
+        const logSnapshot = await getDocs(qLogs);
+        let countLogs = 0;
+        logSnapshot.forEach(docSnap => {
+            batch.delete(docSnap.ref);
+            countLogs++;
+        });
+
+        // 3. Xóa lớp trong collection Classes
+        const classDocId = `${currentSemester}_${classObj.course_code}_${classObj.class_id || classObj.class_name}`;
+        batch.delete(doc(db, 'Classes', classDocId));
+
+        await batch.commit();
+        alert(`✅ Đã xóa thành công lớp ${classObj.class_name}.\n- Đã xóa ${countRecords} bản ghi phân công.\n- Đã xóa ${countLogs} lịch sử chăm sóc liên quan.`);
+        
+        closeClassLifecycleModal();
+        await loadAcademicRecords(currentSemester);
+    } catch (error) {
+        console.error("Lỗi khi xóa lớp:", error);
+        alert("Có lỗi xảy ra khi xóa lớp: " + error.message);
     }
 }
 
